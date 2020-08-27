@@ -47,7 +47,8 @@ localrules: all
 
 rule all:
     input:
-        bigwigs = expand("outs/signal/{sample}.bigwig", sample=SAMPLES.keys())
+        bigwigs = expand("outs/signal/{sample}.bigwig", sample=SAMPLES.keys()),
+        peaks = expand("outs/peaks/{sample}.stringent.bed", sample=SAMPLES.keys())
     run:
         print("workflow complete!")
 
@@ -147,6 +148,14 @@ rule bedgraph_to_bigwig:
     output: "outs/signal/{sample}.bigwig"
     shell:
         "bedGraphToBigWig {input} {config[chrom_sizes]} {output}"
+
+
+rule call_peaks:
+    input: "outs/signal/{sample}.bedgraph"
+    output: "outs/peaks/{sample}.stringent.bed"
+    shell:
+        "SEACR_1.3.sh {input} 0.1 norm stringent outs/peaks/{wildcards.sample}"
+
 
 
 # rule mapping_stats:
