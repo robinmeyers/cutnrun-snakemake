@@ -154,7 +154,7 @@ rule call_peaks:
     input: "outs/signal/{sample}.bedgraph"
     output: "outs/peaks/{sample}.stringent.bed"
     shell:
-        "SEACR_1.3.sh {input} 0.1 norm stringent outs/peaks/{wildcards.sample}"
+        "SEACR_1.3.sh {input} 0.01 non stringent outs/peaks/{wildcards.sample}"
 
 
 
