@@ -86,13 +86,13 @@ rule trim_adaptors:
         r2 = "outs/merge/{sample}_R2.fastq.gz"
     output:
         r1 = "outs/trim/{sample}_R1.fastq.gz",
-        r2 = "outs/trim/{sample}_R2.fastq.gz",
-        qc = "outs/trim/{sample}_qc.txt"
+        r2 = "outs/trim/{sample}_R2.fastq.gz"
+        # qc = "outs/trim/{sample}_qc.txt"
     threads: THREADS
     log: "outs/trim/{sample}.log"
     shell:
         "cutadapt -a {config[adaptor_5p]} -A {config[adaptor_3p]} -m {config[min_len]} --cores {threads} "
-        "-o {output.r1} -p {output.r2} {input.r1} {input.r2} > {output.qc} {log}"
+        "-o {output.r1} -p {output.r2} {input.r1} {input.r2} > {log}"
 
 rule align:
     input:
