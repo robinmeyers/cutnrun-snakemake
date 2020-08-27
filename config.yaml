@@ -1,0 +1,14 @@
+# path to samplesheet
+samplesheet: samples.csv
+
+fastq_dir: fastqs
+
+reference:
+
+chrom_sizes: 
+
+threads: 4
+
+adaptor_5p: GATCGGAAGAGCACACGTCTGAACTCCAGTCAC
+adaptor_3p: GATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
+min_len: 20

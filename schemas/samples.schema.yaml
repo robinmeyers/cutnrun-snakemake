@@ -1,0 +1,15 @@
+$schema: "http://json-schema.org/draft-06/schema#"
+
+description: an entry in the sample sheet
+properties:
+  Name:
+    type: string
+    description: can be same as sample ID - output files will use this
+  IDID:
+    type: string
+    description: sample identifier found in the prefix of fastq files
+    pattern: "^[^_]+$"
+
+required:
+  - Name
+  - ID

@@ -1,0 +1,33 @@
+$schema: "http://json-schema.org/draft-06/schema#"
+
+description: snakemake configuration file
+
+type: object
+
+properties:
+
+  samplesheet:
+    type: string
+
+  reference:
+    type: string
+
+  chrom_sizes:
+    type: string
+
+  threads:
+    type: integer
+
+  adaptor_5p:
+    type: string
+  adaptor_3p:
+    type: string
+  min_len:
+    type: integer
+
+required:
+  - samplesheet
+  - fastq_dir
+  - reference
+  - chrom_sizes
+  - threads
