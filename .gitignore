@@ -1,10 +1,11 @@
 *
 !Snakefile
+!samples.csv
+!config.yaml
 !lib
 !lib/*
 !schemas
 !schemas/*
-!config.yaml
 !cluster.json
 !envs
 !envs/*
