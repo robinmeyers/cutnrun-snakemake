@@ -24,7 +24,7 @@ install:
   - source activate snakemake
   - export REFDIR="assets/reference/Homo_sapiens/NCBI/GRCh38"
   - aws s3 --no-sign-request --region eu-west-1 sync s3://ngi-igenomes/igenomes/Homo_sapiens/NCBI/GRCh38/Sequence/Bowtie2Index/ $REFDIR/Sequence/Bowtie2Index/
-  - bowtie2-inspect -s assets/Homo_sapiens/NCBI/GRCh38/Sequence/Bowtie2Index/genome | awk '/^Sequence-/ { print $2 "\t" $NF }' > $REFDIR/chrom.sizes
+  - bowtie2-inspect -s $REFDIR/Sequence/Bowtie2Index/genome | awk '/^Sequence-/ { print $2 "\t" $NF }' > $REFDIR/chrom.sizes
 
 script:
   #- source activate snakemake
