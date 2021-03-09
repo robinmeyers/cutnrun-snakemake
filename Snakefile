@@ -84,6 +84,8 @@ def get_target_files(wildcards):
         targets = targets + expand("outs/conditions/peaks/{condition}.{stringency}.bed", condition=CONDITIONS.keys(), stringency = ['relaxed', 'stringent'])
         if "control" in samples.columns:
             targets = targets + expand("outs/conditions/peaks/{condition}.vs-ctrl.{stringency}.bed", condition=CONDITION_CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
+    if config['reference_spikein']:
+        targets = targets + expand("outs/samples/align-spikein/{sample}.spikein.bam", sample=SAMPLES.keys())
     return targets
 
 rule all:
@@ -148,6 +150,19 @@ rule align:
     shell:
         "bowtie2 --end-to-end --very-sensitive --no-mixed --no-discordant --phred33 -I 10 -X 700 "
         "-p {threads} -x {config[reference]} "
+        "-1 {input.r1} -2 {input.r2} -S {output.sam} &> {output.log}"
+
+rule align_spikein:
+    input:
+        r1 = "outs/samples/trim/{sample}_R1.fastq.gz",
+        r2 = "outs/samples/trim/{sample}_R2.fastq.gz"
+    output:
+        sam = "outs/samples/align-spikein/{sample}.spikein.sam",
+        log = "outs/samples/align-spikein/{sample}.spikein.bowtie2.log"
+    threads: THREADS
+    shell:
+        "bowtie2 --end-to-end --very-sensitive --no-mixed --no-discordant --phred33 -I 10 -X 700 "
+        "-p {threads} -x {config[reference_spikein]} "
         "-1 {input.r1} -2 {input.r2} -S {output.sam} &> {output.log}"
 
 
