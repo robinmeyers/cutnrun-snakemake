@@ -31,20 +31,17 @@ SAMPLES = dict(zip(samples["sample"], samples["fastq"]))
 if "control" in samples.columns:
     samples_with_controls = samples[samples["control"].notnull()]
     CONTROLS = dict(zip(samples_with_controls["sample"], samples_with_controls["control"]))
-    print(CONTROLS)
 
 
 if "condition" in samples.columns:
     CONDITIONS = {}
     for condition in np.unique(samples["condition"]):
         CONDITIONS[condition] = np.unique(samples[samples["condition"] == condition]["sample"])
-    print(CONDITIONS)
     if "control" in samples.columns:
         samples_with_controls = samples[samples["control"].notnull()]
         CONDITION_CONTROLS = {}
         for condition in np.unique(samples_with_controls["condition"]):
             CONDITION_CONTROLS[condition] = np.unique(samples[samples["condition"] == condition]["control"])
-        print(CONDITION_CONTROLS)
 
 
 
@@ -64,6 +61,7 @@ singularity: "docker://continuumio/miniconda3"
 
 wildcard_constraints:
     directory=".+\/",
+    filename="[^\/]+",
     sample="[^\/\.]+",
     condition="[^\/\.]+",
     dir_type="(samples|conditions)",
@@ -274,9 +272,9 @@ rule merge_controls:
 
 rule sam_to_bam:
     input:
-        "{directory}{sample}.sam"
+        "{directory}{filename}.sam"
     output:
-        "{directory}{sample}.bam"
+        "{directory}{filename}.bam"
     threads: THREADS
     shell:
         "samtools view -b --threads {threads} -o {output} {input}"
@@ -287,9 +285,9 @@ rule sam_to_bam:
     
 rule samtools_index:
     input:
-        "{directory}{sample}.bam"
+        "{directory}{filename}.bam"
     output:
-        "{directory}{sample}.bam.bai"
+        "{directory}{filename}.bam.bai"
     threads: THREADS
     shell:
         "samtools index -@ {threads} {input}"
