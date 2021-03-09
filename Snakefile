@@ -108,6 +108,7 @@ def get_paired_fqs(wildcards):
 rule run_fastqc:
     input: unpack(get_paired_fqs)
     output: "outs/samples/fastqc/{sample}/.done"
+    threads: 1
     shell:
         "fastqc -o outs/samples/fastqc/{wildcards.sample} {input.r1} {input.r2} && touch {output}"
 
@@ -117,6 +118,7 @@ rule merge_fastqs:
     output:
         r1 = temp("outs/samples/merge/{sample}_R1.fastq.gz"),
         r2 = temp("outs/samples/merge/{sample}_R2.fastq.gz")
+    threads: 1
     shell:
         "cat {input.r1} > {output.r1}; cat {input.r2} > {output.r2}"
 
@@ -166,6 +168,7 @@ rule sort_filter_bam:
 rule bam_to_bed:
     input: "outs/samples/align/{sample}.cleaned.bam"
     output: "outs/samples/align/{sample}.bed"
+    threads: 1
     shell:
         "bedtools bamtobed -bedpe -i {input} > {output}; "
   
@@ -173,6 +176,7 @@ rule bam_to_bed:
 rule clean_bed:
     input: "outs/samples/align/{sample}.bed"
     output: "outs/samples/align/{sample}.cleaned.bed"
+    threads: 1
     shell:
         "awk '$1==$4 && $6-$2 < 1000 {{print $0}}' {input} | "
         "cut -f 1,2,6 | sort -k1,1 -k2,2n -k3,3n > {output} "
@@ -180,12 +184,14 @@ rule clean_bed:
 rule bed_to_bedgraph:
     input: "outs/{dir_type}/align/{sample}.cleaned.bed"
     output: "outs/{dir_type}/signal/{sample}.bedgraph"
+    threads: 1
     shell:
         "bedtools genomecov -bg -i {input} -g {config[chrom_sizes]} > {output}"
 
 rule bedgraph_to_bigwig:
     input: "outs/{dir_type}/signal/{sample}.bedgraph"
     output: "outs/{dir_type}/signal/{sample}.bigwig"
+    threads: 1
     shell:
         "bedGraphToBigWig {input} {config[chrom_sizes]} {output}"
 
@@ -193,6 +199,7 @@ rule bedgraph_to_bigwig:
 rule call_seacr_peaks:
     input: "outs/{dir_type}/signal/{sample}.bedgraph"
     output: "outs/{dir_type}/peaks/{sample}.{stringency}.bed"
+    threads: 1
     shell:
         "SEACR_1.3.sh {input} 0.01 non {wildcards.stringency} "
         "outs/{wildcards.dir_type}/peaks/{wildcards.sample}.{wildcards.stringency}; "
@@ -212,6 +219,7 @@ def get_expt_and_ctrl_bedgraphs(wildcards):
 rule call_seacr_peaks_vs_control:
     input: unpack(get_expt_and_ctrl_bedgraphs)
     output: "outs/{dir_type}/peaks/{sample}.vs-ctrl.{stringency}.bed"
+    threads: 1
     shell:
         "SEACR_1.3.sh {input.expt} {input.ctrl} norm {wildcards.stringency} "
         "outs/{wildcards.dir_type}/peaks/{wildcards.sample}.vs-ctrl.{wildcards.stringency}; "
@@ -225,6 +233,7 @@ def get_samples_per_condition(wildcards):
 rule merge_samples:
     input: get_samples_per_condition
     output: "outs/conditions/align/{condition}.cleaned.bed"
+    threads: 1
     shell:
         "cat {input} | sort -k1,1 -k2,2n -k3,3n > {output}"
 
@@ -234,6 +243,7 @@ def get_controls_per_condition(wildcards):
 rule merge_controls:
     input: get_controls_per_condition
     output: "outs/conditions/align/{condition}_CONTROL.cleaned.bed"
+    threads: 1
     shell:
         "cat {input} | sort -k1,1 -k2,2n -k3,3n > {output}"
 

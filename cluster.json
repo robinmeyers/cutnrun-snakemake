@@ -6,45 +6,18 @@
         "time" : "4:00:00",
         "partition" : "apps_khavari",
         "ntasks" : 1,
-        "mem" : "16gb",
-        "cpus_per_task": "{config[threads]}",
+        "mem" : "8gb",
+        "cpus_per_task": "{threads}",
         "output" : "cluster_logs/{rule}.{wildcards}.log"
     },
 
-    "feature_counts" :
+    "align" :
     {
-        "cpus_per_task" : 1
+        "mem" : "32gb"
     },
-    "bowtie_build" :
+
+    "sort_filter_bam":
     {
-        "cpus_per_task" : 1
-    },
-    "extract_umi" :
-    {
-        "cpus_per_task" : 1
-    },
-    "sample_bc_counts" :
-    {
-        "cpus_per_task" : 1
-    },
-    "extract_umi_sample_bc" :
-    {
-        "cpus_per_task" : 1
-    },
-    "feature_counts_pdna" :
-    {
-        "cpus_per_task" : 1
-    },
-    "extract_umi_pdna" :
-    {
-        "cpus_per_task" : 1
-    },
-    "get_read_stats" :
-    {
-        "cpus_per_task" : 1
-    },
-    "create_report" :
-    {
-        "cpus_per_task" : 1
-    },
+        "mem" : "32gb"
+    }
 }
