@@ -2,14 +2,13 @@ $schema: "http://json-schema.org/draft-06/schema#"
 
 description: an entry in the sample sheet
 properties:
-  Name:
+  sample:
     type: string
     description: can be same as sample ID - output files will use this
-  IDID:
+  fastq:
     type: string
     description: sample identifier found in the prefix of fastq files
-    pattern: "^[^_]+$"
 
 required:
-  - Name
-  - ID
+  - sample
+  - fastq

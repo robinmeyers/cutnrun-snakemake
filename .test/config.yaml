@@ -3,9 +3,9 @@ samplesheet: samples.csv
 
 fastq_dir: fastqs
 
-reference: $HOME/genomes/Homo_sapiens/NCBI/GRCh38/Sequence/Bowtie2Index/genome
+reference: /Users/rmmeyers/genomes/Homo_sapiens/NCBI/GRCh38/Sequence/Bowtie2Index/genome
 
-chrom_sizes: $HOME/genomes/Homo_sapiens/NCBI/GRCh38/Sequence/chrom.sizes
+chrom_sizes: /Users/rmmeyers/genomes/Homo_sapiens/NCBI/GRCh38/Sequence/chrom.sizes
 
 threads: 4
 
