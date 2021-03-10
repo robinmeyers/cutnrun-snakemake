@@ -159,7 +159,7 @@ rule align_spikein:
         log = "outs/samples/align-spikein/{sample}.spikein.bowtie2.log"
     threads: THREADS
     shell:
-        "bowtie2 --end-to-end --very-sensitive --no-mixed --no-discordant --phred33 -I 10 -X 700 "
+        "bowtie2 --end-to-end --very-sensitive --no-mixed --no-discordant --phred33 -I 10 -X 700 --no-unal"
         "-p {threads} -x {config[reference_spikein]} "
         "-1 {input.r1} -2 {input.r2} -S {output.sam} &> {output.log}"
 
