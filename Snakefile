@@ -132,7 +132,7 @@ rule trim_adaptors:
         r2 = "outs/samples/trim/{sample}_R2.fastq.gz"
         # qc = "outs/trim/{sample}_qc.txt"
     threads: THREADS
-    log: "outs/trim/{sample}.log"
+    log: "outs/samples/trim/{sample}.log"
     shell:
         "cutadapt -a {config[adaptor_5p]} -A {config[adaptor_3p]} -m {config[min_len]} --cores {threads} "
         "-o {output.r1} -p {output.r2} {input.r1} {input.r2} > {log}"
@@ -172,7 +172,7 @@ rule sort_filter_bam:
     threads: THREADS
     shell:
         "samtools fixmate -m -@ {threads} {input} - | "
-        "samtools sort -@ {threads}  - | "
+        "samtools sort -@ {threads} -T outs/samples/align/{} - | "
         "samtools markdup - - | "
         "samtools view -b -f 0x3 -F 0x400 - | "
         "samtools sort -n - > {output}"

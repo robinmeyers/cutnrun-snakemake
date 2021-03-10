@@ -9,6 +9,6 @@ chrom_sizes: /Users/rmmeyers/genomes/Homo_sapiens/NCBI/GRCh38/Sequence/chrom.siz
 
 threads: 4
 
-adaptor_5p: GATCGGAAGAGCACACGTCTGAACTCCAGTCAC
-adaptor_3p: GATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
+adaptor_5p: AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC
+adaptor_3p: AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
 min_len: 20
