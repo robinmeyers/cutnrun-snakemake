@@ -1,13 +1,13 @@
 {
     "__default__" :
     {
-        "job_name" : "{rule}_{wildcards}",
+        "job-name" : "{rule}_{wildcards}",
         "account" : "khavari",
         "time" : "4:00:00",
         "partition" : "apps_khavari",
         "ntasks" : 1,
         "mem" : "8G",
-        "cpus_per_task": "{threads}",
+        "cpus-per-task": "{threads}",
         "output" : "cluster_logs/{rule}.{wildcards}.log"
     },
 
