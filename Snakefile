@@ -172,7 +172,7 @@ rule sort_filter_bam:
     threads: THREADS
     shell:
         "samtools fixmate -m -@ {threads} {input} - | "
-        "samtools sort -@ {threads} -T outs/samples/align/{} - | "
+        "samtools sort -@ {threads} -T outs/samples/align/{wildcards.sample} - | "
         "samtools markdup - - | "
         "samtools view -b -f 0x3 -F 0x400 - | "
         "samtools sort -n - > {output}"
