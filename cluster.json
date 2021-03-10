@@ -6,7 +6,7 @@
         "time" : "4:00:00",
         "partition" : "apps_khavari",
         "ntasks" : 1,
-        "mem" : "8gb",
+        "mem" : "8G",
         "cpus_per_task": "{threads}",
         "output" : "cluster_logs/{rule}.{wildcards}.log"
     },
@@ -14,11 +14,11 @@
     "align" :
     {
         "time" : "12:00:00",
-        "mem" : "32gb"
+        "mem" : "32G"
     },
 
     "sort_filter_bam":
     {
-        "mem" : "32gb"
+        "mem" : "32G"
     }
 }
