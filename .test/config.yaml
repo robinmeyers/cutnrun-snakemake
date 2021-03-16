@@ -3,7 +3,7 @@ samplesheet: samples.csv
 
 fastq_dir: fastqs
 
-reference: assets/ref/Homo_sapiens/NCBI/GRCh38/Sequence/Bowtie2Index/genome.chr21
+reference: assets/reference/Homo_sapiens/NCBI/GRCh38/Sequence/Bowtie2Index/chr21
 reference_spikein: assets/reference/Escherichia_coli_K_12_MG1655/NCBI/2001-10-15/Sequence/Bowtie2Index/genome
 
 chrom_sizes: /Users/rmmeyers/genomes/Homo_sapiens/NCBI/GRCh38/Sequence/chrom.sizes
