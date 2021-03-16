@@ -73,6 +73,8 @@ localrules: all
 
 def get_target_files(wildcards):
     targets = []
+    targets = targets + expand("outs/samples/fastqc/{sample}/.done", sample=SAMPLES.keys())
+
     targets = targets + expand("outs/samples/signal/{sample}.bigwig", sample=SAMPLES.keys())
     targets = targets + expand("outs/samples/peaks/{sample}.{stringency}.bed", sample=SAMPLES.keys(), stringency = ['relaxed', 'stringent'])
     if "control" in samples.columns:
