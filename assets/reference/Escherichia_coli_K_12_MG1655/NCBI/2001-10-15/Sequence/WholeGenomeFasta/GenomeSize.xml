@@ -1,0 +1,3 @@
+<sequenceSizes genomeName="Escherichia coli K 12 MG1655 (NCBI 2001-10-15)">
+	<chromosome fileName="genome.fa" contigName="chr" totalBases="4639675" isCircular="false" md5="05dc7a37701cdc6bcf154344a227983d" ploidy="2" knownBases="4639675" />
+</sequenceSizes>

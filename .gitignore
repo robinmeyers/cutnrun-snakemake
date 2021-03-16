@@ -13,6 +13,8 @@
 !README.md
 !rules
 !rules/**
+!assets
+!assets/**
 !.gitignore
 !.travis.yml
 !.test
