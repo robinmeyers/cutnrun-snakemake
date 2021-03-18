@@ -76,6 +76,8 @@ def get_target_files(wildcards):
     targets = targets + expand("outs/samples/fastqc/{sample}/.done", sample=SAMPLES.keys())
 
     targets = targets + expand("outs/samples/signal/{sample}.bigwig", sample=SAMPLES.keys())
+    targets = targets + expand("outs/samples/signal/{sample}.scaled.bigwig", sample=SAMPLES.keys())
+
     targets = targets + expand("outs/samples/peaks/{sample}.{stringency}.bed", sample=SAMPLES.keys(), stringency = ['relaxed', 'stringent'])
     if "control" in samples.columns:
         targets = targets + expand("outs/samples/peaks/{sample}.vs-ctrl.{stringency}.bed", sample=CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
@@ -85,7 +87,11 @@ def get_target_files(wildcards):
         if "control" in samples.columns:
             targets = targets + expand("outs/conditions/peaks/{condition}.vs-ctrl.{stringency}.bed", condition=CONDITION_CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
     if config['reference_spikein']:
-        targets = targets + expand("outs/samples/align-spikein/{sample}.spikein.bam", sample=SAMPLES.keys())
+        targets = targets + expand("outs/samples/align-spikein/{sample}.spikein.bam.seqdepth", sample=SAMPLES.keys())
+
+    targets = targets + expand("outs/samples/align/{sample}.cleaned.fragmentsize.txt", sample = SAMPLES.keys())
+    targets = targets + ["outs/samples/alignment_summary.csv"]
+
     return targets
 
 rule all:
@@ -167,6 +173,34 @@ rule align_spikein:
         "-1 {input.r1} -2 {input.r2} -S {output.sam} &> {output.log}"
 
 
+rule seqdepth:
+    input: "outs/samples/align/{sample}.cleaned.bam"
+    output: "outs/samples/align/{sample}.cleaned.bam.seqdepth"
+    shell:
+        "samtools view -f 0x42 {input} | wc -l | tr -d ' '> {output}"
+
+rule spikein_seqdepth:
+    input: "outs/samples/align-spikein/{sample}.spikein.bam"
+    output: "outs/samples/align-spikein/{sample}.spikein.bam.seqdepth"
+    shell:
+        "samtools view -f 0x42 {input} | wc -l | tr -d ' '> {output}"
+
+rule fragment_size:
+    input: "outs/samples/align/{sample}.cleaned.bam"
+    output: "outs/samples/align/{sample}.cleaned.fragmentsize.txt"
+    shell:
+        "samtools view -f 0x42 {input} | awk -F'\\t' 'function abs(x) {{return ((x < 0.0) ? -x : x)}} {{print abs($9)}}' | "
+        "sort -n | uniq -c | awk -v OFS='\\t' '{{print $2, $1}}' > {output}"
+
+rule alignment_summary:
+    input:
+        lambda wildcards: expand("outs/samples/align/{sample}.cleaned.bam.seqdepth", sample=SAMPLES.keys()),
+        lambda wildcards: expand("outs/samples/align-spikein/{sample}.spikein.bam.seqdepth", sample=SAMPLES.keys()) if config['reference_spikein'] else []
+    output:
+        alignment_summary = "outs/samples/alignment_summary.csv"
+    log: "outs/samples/alignment_summary.log"
+    script: "scripts/alignment_summary.R"
+
 rule sort_filter_bam:
     input:
         "outs/samples/align/{sample}.bam"
@@ -204,21 +238,48 @@ rule bed_to_bedgraph:
     shell:
         "bedtools genomecov -bg -i {input} -g {config[chrom_sizes]} > {output}"
 
+
+def get_scale_factor(wildcards, input):
+    with open(input.seqdepth) as f:
+        seqdepth = int(f.readline())
+    if config['reference_spikein']:
+        scale_factor = 10000 / seqdepth
+    else:
+        scale_factor = 1000000 / seqdepth
+    return scale_factor
+
+rule bed_to_scaled_bedgraph:
+    input:
+        bed = "outs/{dir_type}/align/{sample}.cleaned.bed",
+        seqdepth = lambda wildcards: os.path.join("outs/samples/align-spikein", wildcards.sample + ".spikein.bam.seqdepth") if config['reference_spikein'] else os.path.join("outs/samples/align-spikein", wildcards.sample + ".cleaned.bam.seqdepth")
+    output: "outs/{dir_type}/signal/{sample}.scaled.bedgraph"
+    threads: 1
+    params: scale_factor = get_scale_factor
+    shell:
+        "bedtools genomecov -bg -i {input.bed} -scale {params.scale_factor} -g {config[chrom_sizes]} > {output}"
+
+# rule bedgraph_to_bigwig:
+#     input: "outs/{dir_type}/signal/{sample}.bedgraph"
+#     output: "outs/{dir_type}/signal/{sample}.bigwig"
+#     threads: 1
+#     shell:
+#         "bedGraphToBigWig {input} {config[chrom_sizes]} {output}"
+
 rule bedgraph_to_bigwig:
-    input: "outs/{dir_type}/signal/{sample}.bedgraph"
-    output: "outs/{dir_type}/signal/{sample}.bigwig"
+    input: "{directory}{filename}.bedgraph"
+    output: "{directory}{filename}.bigwig"
     threads: 1
     shell:
         "bedGraphToBigWig {input} {config[chrom_sizes]} {output}"
 
-
 rule call_seacr_peaks:
-    input: "outs/{dir_type}/signal/{sample}.bedgraph"
+    input: "outs/{dir_type}/signal/{sample}.scaled.bedgraph"
     output: "outs/{dir_type}/peaks/{sample}.{stringency}.bed"
     threads: 1
+    log: "outs/{dir_type}/peaks/{sample}.vs-ctrl.{stringency}.log"
     shell:
         "SEACR_1.3.sh {input} 0.01 non {wildcards.stringency} "
-        "outs/{wildcards.dir_type}/peaks/{wildcards.sample}.{wildcards.stringency}; "
+        "outs/{wildcards.dir_type}/peaks/{wildcards.sample}.{wildcards.stringency} &> {log}; "
         "mv outs/{wildcards.dir_type}/peaks/{wildcards.sample}.{wildcards.stringency}.{wildcards.stringency}.bed "
         "outs/{wildcards.dir_type}/peaks/{wildcards.sample}.{wildcards.stringency}.bed"
 
@@ -228,17 +289,18 @@ def get_expt_and_ctrl_bedgraphs(wildcards):
         control_sample = CONTROLS[wildcards.sample]
     if wildcards.dir_type == "conditions":
         control_sample = wildcards.sample + "_CONTROL"
-    expt_bg = os.path.join("outs", wildcards.dir_type, "signal", wildcards.sample + ".bedgraph")
-    ctrl_bg = os.path.join("outs", wildcards.dir_type, "signal", control_sample + ".bedgraph")
+    expt_bg = os.path.join("outs", wildcards.dir_type, "signal", wildcards.sample + ".scaled.bedgraph")
+    ctrl_bg = os.path.join("outs", wildcards.dir_type, "signal", control_sample + ".scaled.bedgraph")
     return {'expt' : expt_bg, 'ctrl' : ctrl_bg}
 
 rule call_seacr_peaks_vs_control:
     input: unpack(get_expt_and_ctrl_bedgraphs)
     output: "outs/{dir_type}/peaks/{sample}.vs-ctrl.{stringency}.bed"
     threads: 1
+    log: "outs/{dir_type}/peaks/{sample}.vs-ctrl.{stringency}.log"
     shell:
-        "SEACR_1.3.sh {input.expt} {input.ctrl} norm {wildcards.stringency} "
-        "outs/{wildcards.dir_type}/peaks/{wildcards.sample}.vs-ctrl.{wildcards.stringency}; "
+        "SEACR_1.3.sh {input.expt} {input.ctrl} non {wildcards.stringency} "
+        "outs/{wildcards.dir_type}/peaks/{wildcards.sample}.vs-ctrl.{wildcards.stringency} &> {log}; "
         "mv outs/{wildcards.dir_type}/peaks/{wildcards.sample}.vs-ctrl.{wildcards.stringency}.{wildcards.stringency}.bed "
         "outs/{wildcards.dir_type}/peaks/{wildcards.sample}.vs-ctrl.{wildcards.stringency}.bed"
 
