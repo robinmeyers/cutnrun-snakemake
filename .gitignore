@@ -11,6 +11,8 @@
 !envs/**
 !LICENSE
 !README.md
+!scripts
+!scripts/**
 !rules
 !rules/**
 !assets
