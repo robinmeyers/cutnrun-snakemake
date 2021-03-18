@@ -16,26 +16,34 @@ alignment_summary <- map_dfr(samples$sample, function(s) {
 	bowtie2_output <- file.path("outs/samples/align/", paste0(s, ".bowtie2.log"))
 	align_results <- readLines(bowtie2_output)
 	first_line <- which(str_detect(align_results, "reads; of these:"))[1]
-	total_reads <- as.numeric(str_extract(align_results[first_line], "^\\s*\\d+"))
-	unaligned_reads <- as.numeric(str_extract(align_results[first_line + 2], "^\\s*\\d+"))
-	aligned_once <- as.numeric(str_extract(align_results[first_line + 3], "^\\s*\\d+"))
-	aligned_multi <- as.numeric(str_extract(align_results[first_line + 4], "^\\s*\\d+"))
+	total_reads <- as.integer(str_extract(align_results[first_line], "^\\s*\\d+"))
+	unaligned_reads <- as.integer(str_extract(align_results[first_line + 2], "^\\s*\\d+"))
+	aligned_once <- as.integer(str_extract(align_results[first_line + 3], "^\\s*\\d+"))
+	aligned_multi <- as.integer(str_extract(align_results[first_line + 4], "^\\s*\\d+"))
 	total_aligned <- aligned_once + aligned_multi
 
 	return(tibble(sample = s, total_reads = total_reads, aligned_total = total_aligned))
 
 })
 
-
 alignment_summary <- alignment_summary %>%
 		mutate(aligned_unique = map_int(sample,
 			~ as.integer(readLines(file.path("outs/samples/align", paste0(., ".cleaned.bam.seqdepth")))[1])))
 
-
 if(snakemake@config$reference_spikein != "") {
 	alignment_summary <- alignment_summary %>%
-		mutate(spikein_aligned = map_int(sample,
-			~ as.integer(readLines(file.path("outs/samples/align-spikein", paste0(., ".spikein.bam.seqdepth")))[1])))
+		mutate(spikein_aligned = map_int(sample, function(s) {
+			bowtie2_output <- file.path("outs/samples/align-spikein/", paste0(s, ".spikein.bowtie2.log"))
+			align_results <- readLines(bowtie2_output)
+			first_line <- which(str_detect(align_results, "reads; of these:"))[1]
+			aligned_once <- as.integer(str_extract(align_results[first_line + 3], "^\\s*\\d+"))
+			aligned_multi <- as.integer(str_extract(align_results[first_line + 4], "^\\s*\\d+"))
+			total_aligned <- aligned_once + aligned_multi
+			return(total_aligned)
+			})) %>%
+		mutate(spikein_unique = map_int(sample,
+			~ as.integer(readLines(file.path("outs/samples/align-spikein", paste0(., ".spikein.cleaned.bam.seqdepth")))[1])))
+
 }
 
 write_csv(alignment_summary, snakemake@output$alignment_summary)
