@@ -4,6 +4,9 @@ samplesheet: samples.csv
 fastq_dir: fastqs
 
 reference:
+reference_spikein:
+
+exclusion_list: assets/exclusion_list_encode4_GRCh38_ENCFF356LFX.bed
 
 chrom_sizes: 
 
