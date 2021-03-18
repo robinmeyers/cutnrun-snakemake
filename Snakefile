@@ -77,14 +77,18 @@ def get_target_files(wildcards):
     targets = targets + expand("outs/samples/signal/{sample}.bigwig", sample=SAMPLES.keys())
     targets = targets + expand("outs/samples/signal/{sample}.scaled.bigwig", sample=SAMPLES.keys())
 
-    targets = targets + expand("outs/samples/peaks/{sample}.{stringency}.filtered.bed", sample=SAMPLES.keys(), stringency = ['relaxed', 'stringent'])
+    
     if "control" in samples.columns:
         targets = targets + expand("outs/samples/peaks/{sample}.vs-ctrl.{stringency}.filtered.bed", sample=CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
+    else:
+        targets = targets + expand("outs/samples/peaks/{sample}.{stringency}.filtered.bed", sample=SAMPLES.keys(), stringency = ['relaxed', 'stringent'])
     if "condition" in samples.columns:
         targets = targets + expand("outs/conditions/signal/{condition}.bigwig", condition=CONDITIONS.keys())
-        targets = targets + expand("outs/conditions/peaks/{condition}.{stringency}.filtered.bed", condition=CONDITIONS.keys(), stringency = ['relaxed', 'stringent'])
         if "control" in samples.columns:
             targets = targets + expand("outs/conditions/peaks/{condition}.vs-ctrl.{stringency}.filtered.bed", condition=CONDITION_CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
+        else:
+            targets = targets + expand("outs/conditions/peaks/{condition}.{stringency}.filtered.bed", condition=CONDITIONS.keys(), stringency = ['relaxed', 'stringent'])
+
     # if config['reference_spikein']:
     #     targets = targets + expand("outs/samples/align-spikein/{sample}.spikein.bam.seqdepth", sample=SAMPLES.keys())
 
@@ -197,7 +201,7 @@ rule fragment_size:
 rule alignment_summary:
     input:
         lambda wildcards: expand("outs/samples/align/{sample}.cleaned.bam.seqdepth", sample=SAMPLES.keys()),
-        lambda wildcards: expand("outs/samples/align-spikein/{sample}.spikein.bam.seqdepth", sample=SAMPLES.keys()) if config['reference_spikein'] else []
+        lambda wildcards: expand("outs/samples/align-spikein/{sample}.spikein.cleaned.bam.seqdepth", sample=SAMPLES.keys()) if config['reference_spikein'] else []
     output:
         alignment_summary = "outs/samples/alignment_summary.csv"
     log: "outs/samples/alignment_summary.log"
