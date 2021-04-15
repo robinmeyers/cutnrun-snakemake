@@ -2,15 +2,15 @@
 # After configuring, running snakemake -n in a clone of this repository should successfully execute a dry-run of the workflow.
 
 import re
-import gzip
+# import gzip
 import glob
-import csv
+# import csv
 import numpy as np
 import pandas as pd
 from snakemake.utils import validate, min_version
-from Bio import SeqIO
-from Bio.SeqRecord import SeqRecord
-from Bio.Seq import Seq
+# from Bio import SeqIO
+# from Bio.SeqRecord import SeqRecord
+# from Bio.Seq import Seq
 
 
 ##### load config and sample sheets #####
@@ -74,7 +74,6 @@ def get_target_files(wildcards):
     targets = []
     targets = targets + expand("outs/samples/fastqc/{sample}/.done", sample=SAMPLES.keys())
 
-    # targets = targets + expand("outs/samples/signal/{sample}.bigwig", sample=SAMPLES.keys())
     targets = targets + expand("outs/samples/signal/{sample}.scaled.bigwig", sample=SAMPLES.keys())
 
     
@@ -87,7 +86,7 @@ def get_target_files(wildcards):
         targets = targets + expand("outs/conditions/signal/{condition}.scaled.bigwig", condition=CONDITIONS.keys())
 
         if "control" in samples.columns:
-            # targets = targets + expand("outs/conditions/peaks/{condition}.vs-ctrl.{stringency}.filtered.bed", condition=CONDITION_CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
+            targets = targets + expand("outs/conditions/peaks/{condition}.vs-ctrl.{stringency}.filtered.bed", condition=CONDITION_CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
             targets = targets + expand("outs/conditions/peaks_macs2/{sample}.macs2_q0.1_peaks.filtered.narrowPeak", sample=CONDITION_CONTROLS.keys())
 
         else:

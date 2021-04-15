@@ -1,17 +1,25 @@
-# path to samplesheet
+# Path to samplesheet
 samplesheet: samples.csv
 
+# Directory containing fastq files
 fastq_dir: fastqs
 
+# Specify Bowtie2 reference genome
 reference:
-reference_spikein:
-
-exclusion_list: assets/exclusion_list_encode4_GRCh38_ENCFF356LFX.bed
-
 chrom_sizes: assets/reference/Homo_sapiens/NCBI/GRCh38/chrom.sizes
 
+# Specify reference genome if using spike-in DNA (usually E. coli)
+# This automatically normalizes to the sequencing depth of the spike-in. Leave blank to normalize to sequencing depth of the sample.
+reference_spikein:
+
+# List of excluded genome regions to filter from peaks files
+exclusion_list: assets/exclusion_list_encode4_GRCh38_ENCFF356LFX.bed
+
+# Threads per job for some mulithreaded jobs
 threads: 4
 
+# Illumina adaptors to be trimmed
 adaptor_5p: AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC
 adaptor_3p: AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
+# Minimum length of read after trimming
 min_len: 20
