@@ -1,9 +1,6 @@
-# Feature Barcode QC
+# CUT&RUN Snakemake Workflow
 
 [![Snakemake](https://img.shields.io/badge/snakemake-≥3.12.0-brightgreen.svg)](https://snakemake.bitbucket.io)
-[![Build Status](https://travis-ci.org/khavarilab/featurebarcode-qc.svg?branch=master)](https://travis-ci.org/khavarilab/featurebarcode-qc)
-
-This is a workflow built in snakemake to process a feature barcode library from a 10X scRNA-seq experiment. Starting from raw sequencing reads, the pipeline will map to reference of feature barcodes, quantify cell barcodes and UMIs, and generate an analysis report.
 
 ## Authors
 
@@ -15,26 +12,21 @@ This is a workflow built in snakemake to process a feature barcode library from 
 
 #### Step 1: Install workflow
 
-If you simply want to use this workflow, download and extract the [latest release](https://github.com/khavarilab/featurebarcode-qc/releases).
+If you simply want to use this workflow, download and extract the [latest release](https://github.com/robinmeyers/cutnrun-snakemake/releases).
 If you intend to modify and further extend this workflow or want to work under version control, fork this repository as outlined in [Advanced](#advanced).
 
 Clone this repositiory into a directory
 
 ```
-$ git clone git@github.com:khavarilab/featurebarcode-qc.git
-```
-
-Install a conda distribution, such as miniconda. On a shared computing cluster using modules, you may be able to run
-
-```
-$ module load miniconda
+$ git clone git@github.com:robinmeyers/cutnrun-snakemake.git my-project-name
+$ cd my-project-name
 ```
 
 Create and activate the conda environment
 
 ```
-$ conda env create -q -f=envs/conda.yaml -n featurebarcode-qc
-$ conda activate featurebarcode-qc
+$ conda env create -f envs/conda.yaml -n cutnrun-snakemake
+$ conda activate cutnrun-snakemake
 ```
 
 Run the snakemake on test data
@@ -48,44 +40,36 @@ Examine the outputs of the workflow in the directory ```.test/outs/```
 
 #### Step 2: Configure workflow
 
-Configure the workflow according to your needs via editing the file `config.yaml`. This includes the path to the fasta file of reference feature barcodes, the directory of fastq files, location of plasmid library sequencing, and how targets are specified in the names of the features.
+Configure the workflow by editing the files `config.yaml` and creating a samplesheet.
 
 #### Step 3: Execute workflow
 
-Ensure the correct conda environment is active with
+Ensure the conda environment is active:
 
 ```
-$ conda activate featurebarcode-qc
+$ conda activate cutnrun-snakemake
 ```
 
-Test your configuration by performing a dry-run via
+Test your configuration by performing a dry-run:
 
 ```
-$ snakemake -n
+$ snakemake -np
 ```
 
-Execute the workflow locally via
+Execute the workflow locally using `$N` cores:
 
 ```
-$ snakemake --cores $N
+$ snakemake -p --cores $N
 ```
 
-using `$N` cores or run it in a cluster environment via
+The workflow can be executed on a cluster using snakemake cluster configuration. Install a [profile](https://github.com/Snakemake-Profiles) for your cluster's job submission system. Edit the defaults in the file `cluster.json` and run the workflow. For example:
+
 
 ```
-$ snakemake --cluster qsub --jobs $N
+$ snakemake -p --jobs $N --profile slurm --cluster-config cluster.json
 ```
 
 
-# Step 4: Investigate results
-
-The main outputs are ```outs/feature_counts.txt``` containing the number of unique UMIs per feature per cell barcode, and an HTML report with basic analysis and figures at ```outs/featurebarcode-qc-report.html```. 
-
-After successful execution, you can create a self-contained interactive HTML report with workflow statistics.
-
-```$ snakemake --report report.html```
-
-This report can, e.g., be forwarded to your collaborators.
 
 ### Updating the workflow
 
@@ -107,7 +91,7 @@ The following recipe provides established best practices for running and extendi
 4. Modify the config, and any necessary sheets (and probably the workflow) as needed.
 5. Commit any changes and push the project-branch to your fork on github.
 6. Run the analysis.
-7. Optional: Merge back any valuable and generalizable changes to the [upstream repo](https://github.com/khavarilab/featurebarcode-qc) via a [**pull request**](https://help.github.com/en/articles/creating-a-pull-request). This would be **greatly appreciated**.
+7. Optional: Merge back any valuable and generalizable changes to the [upstream repo](https://github.com/robinmeyers/cutnrun-snakemake) via a [**pull request**](https://help.github.com/en/articles/creating-a-pull-request). This would be **greatly appreciated**.
 8. Optional: Push results (plots/tables) to the remote branch on your fork.
 9. Optional: Create a self-contained workflow archive for publication along with the paper (snakemake --archive).
 10. Optional: Delete the local clone/workdir to free space.
