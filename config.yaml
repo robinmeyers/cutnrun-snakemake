@@ -8,7 +8,7 @@ reference_spikein:
 
 exclusion_list: assets/exclusion_list_encode4_GRCh38_ENCFF356LFX.bed
 
-chrom_sizes: 
+chrom_sizes: assets/reference/Homo_sapiens/NCBI/GRCh38/chrom.sizes
 
 threads: 4
 
