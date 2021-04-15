@@ -74,18 +74,22 @@ def get_target_files(wildcards):
     targets = []
     targets = targets + expand("outs/samples/fastqc/{sample}/.done", sample=SAMPLES.keys())
 
-    targets = targets + expand("outs/samples/signal/{sample}.bigwig", sample=SAMPLES.keys())
+    # targets = targets + expand("outs/samples/signal/{sample}.bigwig", sample=SAMPLES.keys())
     targets = targets + expand("outs/samples/signal/{sample}.scaled.bigwig", sample=SAMPLES.keys())
 
     
     if "control" in samples.columns:
         targets = targets + expand("outs/samples/peaks/{sample}.vs-ctrl.{stringency}.filtered.bed", sample=CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
+        targets = targets + expand("outs/samples/peaks_macs2/{sample}.macs2_q0.1_peaks.filtered.narrowPeak", sample=CONTROLS.keys())
     else:
         targets = targets + expand("outs/samples/peaks/{sample}.{stringency}.filtered.bed", sample=SAMPLES.keys(), stringency = ['relaxed', 'stringent'])
     if "condition" in samples.columns:
-        targets = targets + expand("outs/conditions/signal/{condition}.bigwig", condition=CONDITIONS.keys())
+        targets = targets + expand("outs/conditions/signal/{condition}.scaled.bigwig", condition=CONDITIONS.keys())
+
         if "control" in samples.columns:
-            targets = targets + expand("outs/conditions/peaks/{condition}.vs-ctrl.{stringency}.filtered.bed", condition=CONDITION_CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
+            # targets = targets + expand("outs/conditions/peaks/{condition}.vs-ctrl.{stringency}.filtered.bed", condition=CONDITION_CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
+            targets = targets + expand("outs/conditions/peaks_macs2/{sample}.macs2_q0.1_peaks.filtered.narrowPeak", sample=CONDITION_CONTROLS.keys())
+
         else:
             targets = targets + expand("outs/conditions/peaks/{condition}.{stringency}.filtered.bed", condition=CONDITIONS.keys(), stringency = ['relaxed', 'stringent'])
 
@@ -274,7 +278,7 @@ rule bed_to_scaled_bedgraph:
         seqdepth = lambda wildcards: os.path.join("outs", wildcards.dir_type, "align-spikein", wildcards.sample + ".spikein.cleaned.bam.seqdepth") if config['reference_spikein'] else os.path.join("outs", wildcards.dir_type, "align", wildcards.sample + ".cleaned.bam.seqdepth")
     output: "outs/{dir_type}/signal/{sample}.scaled.bedgraph"
     threads: 1
-    params: scale_constant = lambda wildcards: 10000 if config['reference_spikein'] else 1000000
+    params: scale_constant = lambda wildcards: 10000 if config['reference_spikein'] else 10000000
     shell:
         "seq_depth=$(cat {input.seqdepth}); "
         "scale_factor=$(echo \"scale = 6; {params.scale_constant} / $seq_depth\" | bc); "
@@ -298,6 +302,13 @@ rule bedgraph_to_bigwig:
 rule filter_excluded_regions:
     input: "{directory}{filename}.bed"
     output: "{directory}{filename}.filtered.bed"
+    shell:
+        "bedtools intersect -v -a {input} -b {config[exclusion_list]} > {output}"
+
+
+rule filter_excluded_regions_narrowpeak:
+    input: "{directory}{filename}.narrowPeak"
+    output: "{directory}{filename}.filtered.narrowPeak"
     shell:
         "bedtools intersect -v -a {input} -b {config[exclusion_list]} > {output}"
 
@@ -332,6 +343,25 @@ rule call_seacr_peaks_vs_control:
         "outs/{wildcards.dir_type}/peaks/{wildcards.sample}.vs-ctrl.{wildcards.stringency} &> {log}; "
         "mv outs/{wildcards.dir_type}/peaks/{wildcards.sample}.vs-ctrl.{wildcards.stringency}.{wildcards.stringency}.bed "
         "outs/{wildcards.dir_type}/peaks/{wildcards.sample}.vs-ctrl.{wildcards.stringency}.bed"
+
+def get_expt_and_ctrl_bams(wildcards):
+    if wildcards.dir_type == "samples":
+        control_sample = CONTROLS[wildcards.sample]
+    if wildcards.dir_type == "conditions":
+        control_sample = wildcards.sample + "_CONTROL"
+    expt_bg = os.path.join("outs", wildcards.dir_type, "align", wildcards.sample + ".cleaned.bam")
+    ctrl_bg = os.path.join("outs", wildcards.dir_type, "align", control_sample + ".cleaned.bam")
+    return {'expt' : expt_bg, 'ctrl' : ctrl_bg}
+
+rule call_macs2_peaks_vs_control:
+    input: unpack(get_expt_and_ctrl_bams)
+    output: "outs/{dir_type}/peaks_macs2/{sample}.macs2_q0.1_peaks.narrowPeak"
+    threads: 1
+    log: "outs/{dir_type}/peaks_macs2/{sample}.macs2_q0.1.log"
+    shell:
+        "macs2 callpeak -t {input.expt} -c {input.ctrl} "
+        "-n {wildcards.sample}.macs2_q0.1 --outdir outs/{wildcards.dir_type}/peaks_macs2 "
+        "-g hs -f BAMPE -q 0.1 &> {log}"
 
 
 def get_samples_per_condition(wildcards):
