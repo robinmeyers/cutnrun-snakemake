@@ -125,7 +125,7 @@ rule run_fastqc:
     input: unpack(get_paired_fqs)
     output: OUTPUT_DIR + "samples/fastqc/{sample}/.done"
     params:
-        out = OUTPUT_DIR + "samples/fastqc/{wildcards.sample}"
+        out = OUTPUT_DIR + "samples/fastqc/{sample}"
     log: OUTPUT_DIR + "samples/fastqc/{sample}/{sample}.log"
     threads: 1
     shell:
