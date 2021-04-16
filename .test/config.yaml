@@ -2,7 +2,10 @@
 samplesheet: samples.csv
 
 # Directory containing fastq files
-fastq_dir: fastqs
+fastq_dir: fastqs/
+
+# Directory for outputs
+output_dir: outs/
 
 # Specify Bowtie2 reference genome
 reference: assets/reference/Homo_sapiens/NCBI/GRCh38/Sequence/Bowtie2Index/chr21

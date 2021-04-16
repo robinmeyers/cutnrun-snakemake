@@ -2,9 +2,9 @@
     "__default__" :
     {
         "job-name" : "{rule}_{wildcards}",
+        "partition" : "apps_khavari",
         "account" : "khavari",
         "time" : "4:00:00",
-        "partition" : "apps_khavari",
         "ntasks" : 1,
         "mem" : "8G",
         "cpus-per-task": "{threads}",

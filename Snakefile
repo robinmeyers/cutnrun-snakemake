@@ -12,13 +12,10 @@ from snakemake.utils import validate, min_version
 # from Bio.SeqRecord import SeqRecord
 # from Bio.Seq import Seq
 
-
-##### load config and sample sheets #####
-
-
-configfile: "config.yaml"
 # report: "report/workflow.rst"
 
+##### load config and sample sheets #####
+configfile: "config.yaml"
 validate(config, schema="schemas/config.schema.yaml")
 
 samples = pd.read_csv(config['samplesheet']).set_index("sample", drop=False)
@@ -47,10 +44,11 @@ if "condition" in samples.columns:
 
 THREADS = config['threads']
 FASTQ_DIR = config['fastq_dir']
+OUTPUT_DIR = os.path.join(config['output_dir'], '') if config['output_dir'] else "outs/"
 
 
-
-
+def prefix_out(filename):
+    return(os.path.join(OUTPUT_DIR, filename))
 
 # Allow users to fix the underlying OS via singularity.
 singularity: "docker://continuumio/miniconda3"
@@ -72,32 +70,33 @@ localrules: all
 
 def get_target_files(wildcards):
     targets = []
-    targets = targets + expand("outs/samples/fastqc/{sample}/.done", sample=SAMPLES.keys())
+    targets = targets + expand("samples/fastqc/{sample}/.done", sample=SAMPLES.keys())
 
-    targets = targets + expand("outs/samples/signal/{sample}.scaled.bigwig", sample=SAMPLES.keys())
+    targets = targets + expand("samples/signal/{sample}.scaled.bigwig", sample=SAMPLES.keys())
 
     
     if "control" in samples.columns:
-        targets = targets + expand("outs/samples/peaks/{sample}.vs-ctrl.{stringency}.filtered.bed", sample=CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
-        targets = targets + expand("outs/samples/peaks_macs2/{sample}.macs2_q0.1_peaks.filtered.narrowPeak", sample=CONTROLS.keys())
+        targets = targets + expand("samples/peaks/{sample}.vs-ctrl.{stringency}.filtered.bed", sample=CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
+        targets = targets + expand("samples/peaks_macs2/{sample}.macs2_q0.1_peaks.filtered.narrowPeak", sample=CONTROLS.keys())
     else:
-        targets = targets + expand("outs/samples/peaks/{sample}.{stringency}.filtered.bed", sample=SAMPLES.keys(), stringency = ['relaxed', 'stringent'])
+        targets = targets + expand("samples/peaks/{sample}.{stringency}.filtered.bed", sample=SAMPLES.keys(), stringency = ['relaxed', 'stringent'])
     if "condition" in samples.columns:
-        targets = targets + expand("outs/conditions/signal/{condition}.scaled.bigwig", condition=CONDITIONS.keys())
+        targets = targets + expand("conditions/signal/{condition}.scaled.bigwig", condition=CONDITIONS.keys())
 
         if "control" in samples.columns:
-            targets = targets + expand("outs/conditions/peaks/{condition}.vs-ctrl.{stringency}.filtered.bed", condition=CONDITION_CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
-            targets = targets + expand("outs/conditions/peaks_macs2/{sample}.macs2_q0.1_peaks.filtered.narrowPeak", sample=CONDITION_CONTROLS.keys())
+            targets = targets + expand("conditions/peaks/{condition}.vs-ctrl.{stringency}.filtered.bed", condition=CONDITION_CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
+            targets = targets + expand("conditions/peaks_macs2/{sample}.macs2_q0.1_peaks.filtered.narrowPeak", sample=CONDITION_CONTROLS.keys())
 
         else:
-            targets = targets + expand("outs/conditions/peaks/{condition}.{stringency}.filtered.bed", condition=CONDITIONS.keys(), stringency = ['relaxed', 'stringent'])
+            targets = targets + expand("conditions/peaks/{condition}.{stringency}.filtered.bed", condition=CONDITIONS.keys(), stringency = ['relaxed', 'stringent'])
 
     # if config['reference_spikein']:
-    #     targets = targets + expand("outs/samples/align-spikein/{sample}.spikein.bam.seqdepth", sample=SAMPLES.keys())
+    #     targets = targets + expand("samples/align-spikein/{sample}.spikein.bam.seqdepth", sample=SAMPLES.keys())
 
-    targets = targets + expand("outs/samples/align/{sample}.cleaned.fragmentsize.txt", sample = SAMPLES.keys())
-    targets = targets + ["outs/samples/alignment_summary.csv"]
+    targets = targets + expand("samples/align/{sample}.cleaned.fragmentsize.txt", sample = SAMPLES.keys())
+    targets = targets + ["samples/alignment_summary.csv"]
 
+    targets = [os.path.join(OUTPUT_DIR, t) for t in targets]
     return targets
 
 rule all:
@@ -124,18 +123,20 @@ def get_paired_fqs(wildcards):
 
 rule run_fastqc:
     input: unpack(get_paired_fqs)
-    output: "outs/samples/fastqc/{sample}/.done"
-    log: "outs/samples/fastqc/{sample}/{sample}.log"
+    output: OUTPUT_DIR + "samples/fastqc/{sample}/.done"
+    params:
+        out = OUTPUT_DIR + "samples/fastqc/{wildcards.sample}"
+    log: OUTPUT_DIR + "samples/fastqc/{sample}/{sample}.log"
     threads: 1
     shell:
-        "fastqc -o outs/samples/fastqc/{wildcards.sample} {input.r1} {input.r2} && touch {output}"
+        "fastqc -o {params.out} {input.r1} {input.r2} && touch {output}"
 
 
 rule merge_fastqs:
     input: unpack(get_paired_fqs)
     output:
-        r1 = temp("outs/samples/merge/{sample}_R1.fastq.gz"),
-        r2 = temp("outs/samples/merge/{sample}_R2.fastq.gz")
+        r1 = temp(OUTPUT_DIR + "samples/merge/{sample}_R1.fastq.gz"),
+        r2 = temp(OUTPUT_DIR + "samples/merge/{sample}_R2.fastq.gz")
     threads: 1
     shell:
         "cat {input.r1} > {output.r1}; cat {input.r2} > {output.r2}"
@@ -143,25 +144,24 @@ rule merge_fastqs:
 
 rule trim_adaptors:
     input: 
-        r1 = "outs/samples/merge/{sample}_R1.fastq.gz",
-        r2 = "outs/samples/merge/{sample}_R2.fastq.gz"
+        r1 = OUTPUT_DIR + "samples/merge/{sample}_R1.fastq.gz",
+        r2 = OUTPUT_DIR + "samples/merge/{sample}_R2.fastq.gz"
     output:
-        r1 = "outs/samples/trim/{sample}_R1.fastq.gz",
-        r2 = "outs/samples/trim/{sample}_R2.fastq.gz"
-        # qc = "outs/trim/{sample}_qc.txt"
+        r1 = OUTPUT_DIR + "samples/trim/{sample}_R1.fastq.gz",
+        r2 = OUTPUT_DIR + "samples/trim/{sample}_R2.fastq.gz"
     threads: THREADS
-    log: "outs/samples/trim/{sample}.log"
+    log: OUTPUT_DIR + "samples/trim/{sample}.log"
     shell:
         "cutadapt -a {config[adaptor_5p]} -A {config[adaptor_3p]} -m {config[min_len]} --cores {threads} "
         "-o {output.r1} -p {output.r2} {input.r1} {input.r2} > {log}"
 
 rule align:
     input:
-        r1 = "outs/samples/trim/{sample}_R1.fastq.gz",
-        r2 = "outs/samples/trim/{sample}_R2.fastq.gz"
+        r1 = OUTPUT_DIR + "samples/trim/{sample}_R1.fastq.gz",
+        r2 = OUTPUT_DIR + "samples/trim/{sample}_R2.fastq.gz"
     output:
-        sam = "outs/samples/align/{sample}.sam",
-        log = "outs/samples/align/{sample}.bowtie2.log"
+        sam = OUTPUT_DIR + "samples/align/{sample}.sam",
+        log = OUTPUT_DIR + "samples/align/{sample}.bowtie2.log"
     threads: THREADS
     shell:
         "bowtie2 --end-to-end --very-sensitive --no-mixed --no-discordant --phred33 -I 10 -X 700 "
@@ -170,11 +170,11 @@ rule align:
 
 rule align_spikein:
     input:
-        r1 = "outs/samples/trim/{sample}_R1.fastq.gz",
-        r2 = "outs/samples/trim/{sample}_R2.fastq.gz"
+        r1 = OUTPUT_DIR + "samples/trim/{sample}_R1.fastq.gz",
+        r2 = OUTPUT_DIR + "samples/trim/{sample}_R2.fastq.gz"
     output:
-        sam = "outs/samples/align-spikein/{sample}.spikein.sam",
-        log = "outs/samples/align-spikein/{sample}.spikein.bowtie2.log"
+        sam = OUTPUT_DIR + "samples/align-spikein/{sample}.spikein.sam",
+        log = OUTPUT_DIR + "samples/align-spikein/{sample}.spikein.bowtie2.log"
     threads: THREADS
     shell:
         "bowtie2 --end-to-end --very-sensitive --no-mixed --no-discordant --phred33 -I 10 -X 700 --no-unal "
@@ -183,43 +183,45 @@ rule align_spikein:
 
 
 rule seqdepth:
-    input: "outs/{dir_type}/align/{sample}.cleaned.bam"
-    output: "outs/{dir_type}/align/{sample}.cleaned.bam.seqdepth"
+    input: OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bam"
+    output: OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bam.seqdepth"
     shell:
         "samtools view -f 0x42 {input} | wc -l | tr -d ' '> {output}"
 
 rule spikein_seqdepth:
-    input: "outs/{dir_type}/align-spikein/{sample}.spikein.cleaned.bam"
-    output: "outs/{dir_type}/align-spikein/{sample}.spikein.cleaned.bam.seqdepth"
+    input: OUTPUT_DIR + "{dir_type}/align-spikein/{sample}.spikein.cleaned.bam"
+    output: OUTPUT_DIR + "{dir_type}/align-spikein/{sample}.spikein.cleaned.bam.seqdepth"
     shell:
         "samtools view -f 0x42 {input} | wc -l | tr -d ' '> {output}"
 
 rule fragment_size:
-    input: "outs/{dir_type}/align/{sample}.cleaned.bam"
-    output: "outs/{dir_type}/align/{sample}.cleaned.fragmentsize.txt"
+    input: OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bam"
+    output: OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.fragmentsize.txt"
     shell:
         "samtools view -f 0x42 {input} | awk -F'\\t' 'function abs(x) {{return ((x < 0.0) ? -x : x)}} {{print abs($9)}}' | "
         "sort -n | uniq -c | awk -v OFS='\\t' '{{print $2, $1}}' > {output}"
 
 rule alignment_summary:
     input:
-        lambda wildcards: expand("outs/samples/align/{sample}.cleaned.bam.seqdepth", sample=SAMPLES.keys()),
-        lambda wildcards: expand("outs/samples/align-spikein/{sample}.spikein.cleaned.bam.seqdepth", sample=SAMPLES.keys()) if config['reference_spikein'] else []
+        lambda wildcards: expand(OUTPUT_DIR + "samples/align/{sample}.cleaned.bam.seqdepth", sample=SAMPLES.keys()),
+        lambda wildcards: expand(OUTPUT_DIR + "samples/align-spikein/{sample}.spikein.cleaned.bam.seqdepth", sample=SAMPLES.keys()) if config['reference_spikein'] else []
     output:
-        alignment_summary = "outs/samples/alignment_summary.csv"
-    log: "outs/samples/alignment_summary.log"
+        alignment_summary = OUTPUT_DIR + "samples/alignment_summary.csv"
+    log: OUTPUT_DIR + "samples/alignment_summary.log"
     script: "scripts/alignment_summary.R"
 
 
 rule sort_filter_bam:
     input:
-        "outs/samples/align/{sample}.bam"
+        OUTPUT_DIR + "samples/align/{sample}.bam"
     output:
-        "outs/samples/align/{sample}.cleaned.bam"
+        OUTPUT_DIR + "samples/align/{sample}.cleaned.bam"
+    params:
+        tmp = OUTPUT_DIR + "samples/align/{sample}"
     threads: THREADS
     shell:
         "samtools fixmate -m -@ {threads} {input} - | "
-        "samtools sort -@ {threads} -T outs/samples/align/{wildcards.sample} - | "
+        "samtools sort -@ {threads} -T {params.tmp} - | "
         "samtools markdup - - | "
         "samtools view -b -f 0x3 -F 0x400 - | "
         "samtools sort -n - > {output}"
@@ -227,36 +229,38 @@ rule sort_filter_bam:
 
 rule sort_filter_spikein_bam:
     input:
-        "outs/samples/align-spikein/{sample}.spikein.bam"
+        OUTPUT_DIR + "samples/align-spikein/{sample}.spikein.bam"
     output:
-        "outs/samples/align-spikein/{sample}.spikein.cleaned.bam"
+        OUTPUT_DIR + "samples/align-spikein/{sample}.spikein.cleaned.bam"
+    params:
+        tmp = OUTPUT_DIR + "samples/align-spikein/{sample}"
     threads: THREADS
     shell:
         "samtools fixmate -m -@ {threads} {input} - | "
-        "samtools sort -@ {threads} -T outs/samples/align-spikein/{wildcards.sample} - | "
+        "samtools sort -@ {threads} -T {params.tmp} - | "
         "samtools markdup - - | "
         "samtools view -b -f 0x3 -F 0x400 - | "
         "samtools sort -n - > {output}"
 
 rule bam_to_bed:
-    input: "outs/{dir_type}/align/{sample}.cleaned.bam"
-    output: "outs/{dir_type}/align/{sample}.bed"
+    input: OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bam"
+    output: OUTPUT_DIR + "{dir_type}/align/{sample}.bed"
     threads: 1
     shell:
         "bedtools bamtobed -bedpe -i {input} > {output}; "
   
 
 rule clean_bed:
-    input: "outs/{dir_type}/align/{sample}.bed"
-    output: "outs/{dir_type}/align/{sample}.cleaned.bed"
+    input: OUTPUT_DIR + "{dir_type}/align/{sample}.bed"
+    output: OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bed"
     threads: 1
     shell:
         "awk '$1==$4 && $6-$2 < 1000 {{print $0}}' {input} | "
         "cut -f 1,2,6 | sort -k1,1 -k2,2n -k3,3n > {output} "
 
 rule bed_to_bedgraph:
-    input: "outs/{dir_type}/align/{sample}.cleaned.bed"
-    output: "outs/{dir_type}/signal/{sample}.bedgraph"
+    input: OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bed"
+    output: OUTPUT_DIR + "{dir_type}/signal/{sample}.bedgraph"
     threads: 1
     shell:
         "bedtools genomecov -bg -i {input} -g {config[chrom_sizes]} > {output}"
@@ -273,9 +277,9 @@ rule bed_to_bedgraph:
 
 rule bed_to_scaled_bedgraph:
     input:
-        bed = "outs/{dir_type}/align/{sample}.cleaned.bed",
-        seqdepth = lambda wildcards: os.path.join("outs", wildcards.dir_type, "align-spikein", wildcards.sample + ".spikein.cleaned.bam.seqdepth") if config['reference_spikein'] else os.path.join("outs", wildcards.dir_type, "align", wildcards.sample + ".cleaned.bam.seqdepth")
-    output: "outs/{dir_type}/signal/{sample}.scaled.bedgraph"
+        bed = OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bed",
+        seqdepth = lambda wildcards: os.path.join(OUTPUT_DIR, wildcards.dir_type, "align-spikein", wildcards.sample + ".spikein.cleaned.bam.seqdepth") if config['reference_spikein'] else os.path.join(OUTPUT_DIR, wildcards.dir_type, "align", wildcards.sample + ".cleaned.bam.seqdepth")
+    output: OUTPUT_DIR + "{dir_type}/signal/{sample}.scaled.bedgraph"
     threads: 1
     params: scale_constant = lambda wildcards: 10000 if config['reference_spikein'] else 10000000
     shell:
@@ -283,13 +287,6 @@ rule bed_to_scaled_bedgraph:
         "scale_factor=$(echo \"scale = 6; {params.scale_constant} / $seq_depth\" | bc); "
         "echo $scale_factor; "
         "bedtools genomecov -bg -i {input.bed} -scale $scale_factor -g {config[chrom_sizes]} > {output}"
-
-# rule bedgraph_to_bigwig:
-#     input: "outs/{dir_type}/signal/{sample}.bedgraph"
-#     output: "outs/{dir_type}/signal/{sample}.bigwig"
-#     threads: 1
-#     shell:
-#         "bedGraphToBigWig {input} {config[chrom_sizes]} {output}"
 
 rule bedgraph_to_bigwig:
     input: "{directory}{filename}.bedgraph"
@@ -312,15 +309,16 @@ rule filter_excluded_regions_narrowpeak:
         "bedtools intersect -v -a {input} -b {config[exclusion_list]} > {output}"
 
 rule call_seacr_peaks:
-    input: "outs/{dir_type}/signal/{sample}.scaled.bedgraph"
-    output: "outs/{dir_type}/peaks/{sample}.{stringency}.bed"
+    input: OUTPUT_DIR + "{dir_type}/signal/{sample}.scaled.bedgraph"
+    output: OUTPUT_DIR + "{dir_type}/peaks/{sample}.{stringency}.bed"
     threads: 1
-    log: "outs/{dir_type}/peaks/{sample}.vs-ctrl.{stringency}.log"
+    log: OUTPUT_DIR + "{dir_type}/peaks/{sample}.vs-ctrl.{stringency}.log"
+    params:
+        prefix = OUTPUT_DIR + "{dir_type}/peaks/{sample}.{stringency}",
+        tmp = OUTPUT_DIR + "{dir_type}/peaks/{sample}.{stringency}.{stringency}.bed"
     shell:
-        "SEACR_1.3.sh {input} 0.01 non {wildcards.stringency} "
-        "outs/{wildcards.dir_type}/peaks/{wildcards.sample}.{wildcards.stringency} &> {log}; "
-        "mv outs/{wildcards.dir_type}/peaks/{wildcards.sample}.{wildcards.stringency}.{wildcards.stringency}.bed "
-        "outs/{wildcards.dir_type}/peaks/{wildcards.sample}.{wildcards.stringency}.bed"
+        "SEACR_1.3.sh {input} 0.01 non {wildcards.stringency} {params.prefix} &> {log}; "
+        "mv {params.tmp} {output}"
 
 
 def get_expt_and_ctrl_bedgraphs(wildcards):
@@ -328,69 +326,73 @@ def get_expt_and_ctrl_bedgraphs(wildcards):
         control_sample = CONTROLS[wildcards.sample]
     if wildcards.dir_type == "conditions":
         control_sample = wildcards.sample + "_CONTROL"
-    expt_bg = os.path.join("outs", wildcards.dir_type, "signal", wildcards.sample + ".scaled.bedgraph")
-    ctrl_bg = os.path.join("outs", wildcards.dir_type, "signal", control_sample + ".scaled.bedgraph")
+    expt_bg = os.path.join(OUTPUT_DIR, wildcards.dir_type, "signal", wildcards.sample + ".scaled.bedgraph")
+    ctrl_bg = os.path.join(OUTPUT_DIR, wildcards.dir_type, "signal", control_sample + ".scaled.bedgraph")
     return {'expt' : expt_bg, 'ctrl' : ctrl_bg}
 
 rule call_seacr_peaks_vs_control:
     input: unpack(get_expt_and_ctrl_bedgraphs)
-    output: "outs/{dir_type}/peaks/{sample}.vs-ctrl.{stringency}.bed"
+    output: OUTPUT_DIR + "{dir_type}/peaks/{sample}.vs-ctrl.{stringency}.bed"
     threads: 1
-    log: "outs/{dir_type}/peaks/{sample}.vs-ctrl.{stringency}.log"
+    log: OUTPUT_DIR + "{dir_type}/peaks/{sample}.vs-ctrl.{stringency}.log"
+    params:
+        prefix = OUTPUT_DIR + "{dir_type}/peaks/{sample}.vs-ctrl.{stringency}",
+        tmp = OUTPUT_DIR + "{dir_type}/peaks/{sample}.vs-ctrl.{stringency}.{stringency}.bed"
     shell:
-        "SEACR_1.3.sh {input.expt} {input.ctrl} non {wildcards.stringency} "
-        "outs/{wildcards.dir_type}/peaks/{wildcards.sample}.vs-ctrl.{wildcards.stringency} &> {log}; "
-        "mv outs/{wildcards.dir_type}/peaks/{wildcards.sample}.vs-ctrl.{wildcards.stringency}.{wildcards.stringency}.bed "
-        "outs/{wildcards.dir_type}/peaks/{wildcards.sample}.vs-ctrl.{wildcards.stringency}.bed"
+        "SEACR_1.3.sh {input.expt} {input.ctrl} non {wildcards.stringency} {params.prefix} &> {log}; "
+        "mv {params.tmp} {output}"
+
 
 def get_expt_and_ctrl_bams(wildcards):
     if wildcards.dir_type == "samples":
         control_sample = CONTROLS[wildcards.sample]
     if wildcards.dir_type == "conditions":
         control_sample = wildcards.sample + "_CONTROL"
-    expt_bg = os.path.join("outs", wildcards.dir_type, "align", wildcards.sample + ".cleaned.bam")
-    ctrl_bg = os.path.join("outs", wildcards.dir_type, "align", control_sample + ".cleaned.bam")
+    expt_bg = os.path.join(OUTPUT_DIR, wildcards.dir_type, "align", wildcards.sample + ".cleaned.bam")
+    ctrl_bg = os.path.join(OUTPUT_DIR, wildcards.dir_type, "align", control_sample + ".cleaned.bam")
     return {'expt' : expt_bg, 'ctrl' : ctrl_bg}
 
 rule call_macs2_peaks_vs_control:
     input: unpack(get_expt_and_ctrl_bams)
-    output: "outs/{dir_type}/peaks_macs2/{sample}.macs2_q0.1_peaks.narrowPeak"
+    output: OUTPUT_DIR + "{dir_type}/peaks_macs2/{sample}.macs2_q0.1_peaks.narrowPeak"
     threads: 1
-    log: "outs/{dir_type}/peaks_macs2/{sample}.macs2_q0.1.log"
+    log: OUTPUT_DIR + "{dir_type}/peaks_macs2/{sample}.macs2_q0.1.log"
+    params:
+        outdir = OUTPUT_DIR + "{dir_type}/peaks_macs2"
     shell:
         "macs2 callpeak -t {input.expt} -c {input.ctrl} "
-        "-n {wildcards.sample}.macs2_q0.1 --outdir outs/{wildcards.dir_type}/peaks_macs2 "
+        "-n {wildcards.sample}.macs2_q0.1 --outdir {params.outdir} "
         "-g hs -f BAMPE -q 0.1 &> {log}"
 
 
 def get_samples_per_condition(wildcards):
-    return [os.path.join("outs/samples/align/", s + ".cleaned.bam") for s in CONDITIONS[wildcards.condition]]
+    return [os.path.join(OUTPUT_DIR, "samples/align/", s + ".cleaned.bam") for s in CONDITIONS[wildcards.condition]]
 
 rule merge_samples:
     input: get_samples_per_condition
-    output: "outs/conditions/align/{condition}.cleaned.bam"
+    output: OUTPUT_DIR + "conditions/align/{condition}.cleaned.bam"
     threads: THREADS
     shell:
         # "cat {input} | sort -k1,1 -k2,2n -k3,3n > {output}"
         "samtools merge -@ {threads} {output} {input}"
 
 def get_controls_per_condition(wildcards):
-    return [os.path.join("outs/samples/align/", s + ".cleaned.bam") for s in CONDITION_CONTROLS[wildcards.condition]]
+    return [os.path.join(OUTPUT_DIR, "samples/align/", s + ".cleaned.bam") for s in CONDITION_CONTROLS[wildcards.condition]]
 
 rule merge_controls:
     input: get_controls_per_condition
-    output: "outs/conditions/align/{condition}_CONTROL.cleaned.bam"
+    output: OUTPUT_DIR + "conditions/align/{condition}_CONTROL.cleaned.bam"
     threads: THREADS
     shell:
         # "cat {input} | sort -k1,1 -k2,2n -k3,3n > {output}"
         "samtools merge -@ {threads} {output} {input}"
 
 def get_sample_spikeins_per_condition(wildcards):
-    return [os.path.join("outs/samples/align-spikein/", s + ".spikein.cleaned.bam") for s in CONDITIONS[wildcards.condition]]
+    return [os.path.join(OUTPUT_DIR, "samples/align-spikein/", s + ".spikein.cleaned.bam") for s in CONDITIONS[wildcards.condition]]
 
 rule merge_sample_spikeins:
     input: get_sample_spikeins_per_condition
-    output: "outs/conditions/align-spikein/{condition}.spikein.cleaned.bam"
+    output: OUTPUT_DIR + "conditions/align-spikein/{condition}.spikein.cleaned.bam"
     threads: THREADS
     shell:
         # "cat {input} | sort -k1,1 -k2,2n -k3,3n > {output}"
@@ -399,11 +401,11 @@ rule merge_sample_spikeins:
 
 
 def get_control_spikeins_per_condition(wildcards):
-    return [os.path.join("outs/samples/align-spikein/", s + ".spikein.cleaned.bam") for s in CONDITION_CONTROLS[wildcards.condition]]
+    return [os.path.join(OUTPUT_DIR, "samples/align-spikein/", s + ".spikein.cleaned.bam") for s in CONDITION_CONTROLS[wildcards.condition]]
 
 rule merge_control_spikeins:
     input: get_control_spikeins_per_condition
-    output: "outs/conditions/align-spikein/{condition}_CONTROL.spikein.cleaned.bam"
+    output: OUTPUT_DIR + "conditions/align-spikein/{condition}_CONTROL.spikein.cleaned.bam"
     threads: THREADS
     shell:
         # "cat {input} | sort -k1,1 -k2,2n -k3,3n > {output}"
