@@ -9,7 +9,7 @@ output_dir: outs/
 
 # Specify Bowtie2 reference genome
 reference:
-chrom_sizes: assets/reference/Homo_sapiens/NCBI/GRCh38/chrom.sizes
+chrom_sizes:
 
 # Specify reference genome if using spike-in DNA (usually E. coli)
 # This automatically normalizes to the sequencing depth of the spike-in. Leave blank to normalize to sequencing depth of the sample.
