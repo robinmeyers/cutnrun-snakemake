@@ -13,7 +13,7 @@ library(tidyverse)
 samples <- read_csv(snakemake@config$samplesheet)
 
 alignment_summary <- map_dfr(samples$sample, function(s) {
-	bowtie2_output <- file.path("outs/samples/align/", paste0(s, ".bowtie2.log"))
+	bowtie2_output <- file.path(snakemake@config$output_dir, "samples/align/", paste0(s, ".bowtie2.log"))
 	align_results <- readLines(bowtie2_output)
 	first_line <- which(str_detect(align_results, "reads; of these:"))[1]
 	total_reads <- as.integer(str_extract(align_results[first_line], "^\\s*\\d+"))
@@ -28,12 +28,12 @@ alignment_summary <- map_dfr(samples$sample, function(s) {
 
 alignment_summary <- alignment_summary %>%
 		mutate(aligned_unique = map_int(sample,
-			~ as.integer(readLines(file.path("outs/samples/align", paste0(., ".cleaned.bam.seqdepth")))[1])))
+			~ as.integer(readLines(file.path(snakemake@config$output_dir, "samples/align", paste0(., ".cleaned.bam.seqdepth")))[1])))
 
 if(snakemake@config$reference_spikein != "") {
 	alignment_summary <- alignment_summary %>%
 		mutate(spikein_aligned = map_int(sample, function(s) {
-			bowtie2_output <- file.path("outs/samples/align-spikein/", paste0(s, ".spikein.bowtie2.log"))
+			bowtie2_output <- file.path(snakemake@config$output_dir, "samples/align-spikein/", paste0(s, ".spikein.bowtie2.log"))
 			align_results <- readLines(bowtie2_output)
 			first_line <- which(str_detect(align_results, "reads; of these:"))[1]
 			aligned_once <- as.integer(str_extract(align_results[first_line + 3], "^\\s*\\d+"))
@@ -42,7 +42,7 @@ if(snakemake@config$reference_spikein != "") {
 			return(total_aligned)
 			})) %>%
 		mutate(spikein_unique = map_int(sample,
-			~ as.integer(readLines(file.path("outs/samples/align-spikein", paste0(., ".spikein.cleaned.bam.seqdepth")))[1])))
+			~ as.integer(readLines(file.path(snakemake@config$output_dir, "samples/align-spikein", paste0(., ".spikein.cleaned.bam.seqdepth")))[1])))
 
 }
 
