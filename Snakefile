@@ -110,10 +110,16 @@ def get_paired_fqs(wildcards):
         return {'r1' : [], 'r2': []}
         # raise ValueError(wildcards.sample + " is not a sample in the samplesheet")
     sample_id = SAMPLES[wildcards.sample]
-    r1 = glob.glob(os.path.join(FASTQ_DIR, "**", sample_id + "_*R1*.fastq.gz"),
-        recursive=True)
-    r2 = glob.glob(os.path.join(FASTQ_DIR, "**", sample_id + "_*R2*.fastq.gz"), 
-        recursive=True)
+
+    r1 = list(filter(re.compile(sample_id + "(_S[0-9]+)?(_L[0-9]+)?_R1(_001)?.fastq.gz$").search, 
+        glob.glob(os.path.join(FASTQ_DIR, sample_id + "*"), recursive=True)))
+    r2 = list(filter(re.compile(sample_id + "(_S[0-9]+)?(_L[0-9]+)?_R2(_001)?.fastq.gz$").search, 
+        glob.glob(os.path.join(FASTQ_DIR, sample_id + "*"), recursive=True)))
+
+    # r1 = glob.glob(os.path.join(FASTQ_DIR, "**", sample_id + "_*R1*.fastq.gz"),
+    #     recursive=True)
+    # r2 = glob.glob(os.path.join(FASTQ_DIR, "**", sample_id + "_*R2*.fastq.gz"), 
+    #     recursive=True)
     if len(r1) == 0:
         raise ValueError(sample_id + " has no matching input fastq file")
     if len(r1) != len(r2):
