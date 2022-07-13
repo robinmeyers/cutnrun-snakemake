@@ -169,6 +169,8 @@ rule align:
         sam = OUTPUT_DIR + "samples/align/{sample}.sam"
     log: OUTPUT_DIR + "samples/align/{sample}.bowtie2.log"
     threads: THREADS
+    resources:
+        mem_mb = 32000
     shell:
         "bowtie2 --end-to-end --very-sensitive --no-mixed --no-discordant --phred33 -I 10 -X 700 "
         "-p {threads} -x {config[reference]} "
@@ -182,6 +184,8 @@ rule align_spikein:
         sam = OUTPUT_DIR + "samples/align-spikein/{sample}.spikein.sam"
     log: OUTPUT_DIR + "samples/align-spikein/{sample}.spikein.bowtie2.log"
     threads: THREADS
+    resources:
+        mem_mb = 8000
     shell:
         "bowtie2 --end-to-end --very-sensitive --no-mixed --no-discordant --phred33 -I 10 -X 700 --no-unal "
         "-p {threads} -x {config[reference_spikein]} "
@@ -225,6 +229,8 @@ rule sort_filter_bam:
     params:
         tmp = OUTPUT_DIR + "samples/align/{sample}"
     threads: THREADS
+    resources:
+        mem_mb = 32000
     shell:
         "samtools fixmate -m -@ {threads} {input} - | "
         "samtools sort -@ {threads} -T {params.tmp} - | "
@@ -241,6 +247,8 @@ rule sort_filter_spikein_bam:
     params:
         tmp = OUTPUT_DIR + "samples/align-spikein/{sample}"
     threads: THREADS
+    resources:
+        mem_mb = 8000
     shell:
         "samtools fixmate -m -@ {threads} {input} - | "
         "samtools sort -@ {threads} -T {params.tmp} - | "
