@@ -276,6 +276,8 @@ rule bed_to_bedgraph:
     input: OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bed"
     output: OUTPUT_DIR + "{dir_type}/signal/{sample}.bedgraph"
     threads: 1
+    resources:
+        mem_mb = 4000
     shell:
         "bedtools genomecov -bg -i {input} -g {config[chrom_sizes]} > {output}"
 
@@ -296,6 +298,8 @@ rule bed_to_scaled_bedgraph:
     output: OUTPUT_DIR + "{dir_type}/signal/{sample}.scaled.bedgraph"
     threads: 1
     params: scale_constant = lambda wildcards: 10000 if config['reference_spikein'] else 10000000
+    resources:
+        mem_mb = 4000
     shell:
         "seq_depth=$(cat {input.seqdepth}); "
         "scale_factor=$(echo \"scale = 6; {params.scale_constant} / $seq_depth\" | bc); "
