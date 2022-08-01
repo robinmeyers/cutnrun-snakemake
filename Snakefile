@@ -270,7 +270,7 @@ rule clean_bed:
     threads: 1
     shell:
         "awk '$1==$4 && $6-$2 < 1000 {{print $0}}' {input} | "
-        "cut -f 1,2,6 | sort -k1,1 -k2,2n -k3,3n > {output} "
+        "cut -f 1,2,6,7,8,9 | sort -k1,1 -k2,2n -k3,3n > {output} "
 
 rule bed_to_bedgraph:
     input: OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bed"
@@ -299,7 +299,7 @@ rule bed_to_scaled_bedgraph:
     threads: 1
     params: scale_constant = lambda wildcards: 10000 if config['reference_spikein'] else 10000000
     resources:
-        mem_mb = 4000
+        mem_mb = 8000
     shell:
         "seq_depth=$(cat {input.seqdepth}); "
         "scale_factor=$(echo \"scale = 6; {params.scale_constant} / $seq_depth\" | bc); "
