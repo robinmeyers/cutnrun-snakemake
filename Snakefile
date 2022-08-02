@@ -253,7 +253,7 @@ rule sort_filter_spikein_bam:
         "samtools fixmate -m -@ {threads} {input} - | "
         "samtools sort -@ {threads} -T {params.tmp} - | "
         "samtools markdup - - | "
-        "samtools view -b -f 0x3 -F 0x400 - | "
+        "samtools view -b -f 0x3 -F 0x400 - > {output}"
         # "samtools sort -n - > {output}"
 
 rule bam_to_bed:
