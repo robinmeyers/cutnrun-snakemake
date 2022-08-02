@@ -254,7 +254,7 @@ rule sort_filter_spikein_bam:
         "samtools sort -@ {threads} -T {params.tmp} - | "
         "samtools markdup - - | "
         "samtools view -b -f 0x3 -F 0x400 - | "
-        "samtools sort -n - > {output}"
+        # "samtools sort -n - > {output}"
 
 rule bam_to_bed:
     input: OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bam"
@@ -334,6 +334,8 @@ rule call_seacr_peaks:
     params:
         prefix = OUTPUT_DIR + "{dir_type}/peaks/{sample}.{stringency}",
         tmp = OUTPUT_DIR + "{dir_type}/peaks/{sample}.{stringency}.{stringency}.bed"
+    resources:
+        mem_mb = 8000
     shell:
         "SEACR_1.3.sh {input} 0.01 non {wildcards.stringency} {params.prefix} &> {log}; "
         "mv {params.tmp} {output}"
@@ -356,6 +358,8 @@ rule call_seacr_peaks_vs_control:
     params:
         prefix = OUTPUT_DIR + "{dir_type}/peaks/{sample}.vs-ctrl.{stringency}",
         tmp = OUTPUT_DIR + "{dir_type}/peaks/{sample}.vs-ctrl.{stringency}.{stringency}.bed"
+    resources:
+        mem_mb = 8000
     shell:
         "SEACR_1.3.sh {input.expt} {input.ctrl} non {wildcards.stringency} {params.prefix} &> {log}; "
         "mv {params.tmp} {output}"
@@ -377,6 +381,8 @@ rule call_macs2_peaks_vs_control:
     log: OUTPUT_DIR + "{dir_type}/peaks_macs2/{sample}.macs2_q0.1.log"
     params:
         outdir = OUTPUT_DIR + "{dir_type}/peaks_macs2"
+    resources:
+        mem_mb = 8000
     shell:
         "macs2 callpeak -t {input.expt} -c {input.ctrl} "
         "-n {wildcards.sample}.macs2_q0.1 --outdir {params.outdir} "
