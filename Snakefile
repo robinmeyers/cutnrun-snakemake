@@ -261,8 +261,7 @@ rule bam_to_bed:
     output: OUTPUT_DIR + "{dir_type}/align/{sample}.bed"
     threads: 1
     shell:
-        "bedtools bamtobed -bedpe -i {input} > {output}; "
-  
+        "samtools collate -f -O {input} | bedtools bamtobed -bedpe > {output}"
 
 rule clean_bed:
     input: OUTPUT_DIR + "{dir_type}/align/{sample}.bed"
