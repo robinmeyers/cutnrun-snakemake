@@ -166,7 +166,7 @@ rule align:
         r1 = OUTPUT_DIR + "samples/trim/{sample}_R1.fastq.gz",
         r2 = OUTPUT_DIR + "samples/trim/{sample}_R2.fastq.gz"
     output:
-        sam = OUTPUT_DIR + "samples/align/{sample}.sam"
+        sam = temp(OUTPUT_DIR + "samples/align/{sample}.sam")
     log: OUTPUT_DIR + "samples/align/{sample}.bowtie2.log"
     threads: THREADS
     resources:
@@ -181,7 +181,7 @@ rule align_spikein:
         r1 = OUTPUT_DIR + "samples/trim/{sample}_R1.fastq.gz",
         r2 = OUTPUT_DIR + "samples/trim/{sample}_R2.fastq.gz"
     output:
-        sam = OUTPUT_DIR + "samples/align-spikein/{sample}.spikein.sam"
+        sam = temp(OUTPUT_DIR + "samples/align-spikein/{sample}.spikein.sam")
     log: OUTPUT_DIR + "samples/align-spikein/{sample}.spikein.bowtie2.log"
     threads: THREADS
     resources:
@@ -257,11 +257,13 @@ rule sort_filter_spikein_bam:
         # "samtools sort -n - > {output}"
 
 rule bam_to_bed:
-    input: OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bam"
-    output: OUTPUT_DIR + "{dir_type}/align/{sample}.bed"
+    input:
+        bam = OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bam",
+        bai = OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bam.bai"
+    output: temp(OUTPUT_DIR + "{dir_type}/align/{sample}.bed")
     threads: 1
     shell:
-        "samtools collate -f -O {input} | bedtools bamtobed -bedpe > {output}"
+        "samtools collate -f -O {input.bam} | bedtools bamtobed -bedpe > {output}"
 
 rule clean_bed:
     input: OUTPUT_DIR + "{dir_type}/align/{sample}.bed"
@@ -273,7 +275,7 @@ rule clean_bed:
 
 rule bed_to_bedgraph:
     input: OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bed"
-    output: OUTPUT_DIR + "{dir_type}/signal/{sample}.bedgraph"
+    output: temp(OUTPUT_DIR + "{dir_type}/signal/{sample}.bedgraph")
     threads: 1
     resources:
         mem_mb = 4000
