@@ -267,14 +267,15 @@ rule bam_to_bed:
 
 rule clean_bed:
     input: OUTPUT_DIR + "{dir_type}/align/{sample}.bed"
-    output: OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bed"
+    output: OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bed.gz"
     threads: 1
     shell:
         "awk '$1==$4 && $6-$2 < 1000 {{print $0}}' {input} | "
-        "cut -f 1,2,6,7,8,9 | sort -k1,1 -k2,2n -k3,3n > {output} "
+        "cut -f 1,2,6,7,8,9 | sort -k1,1 -k2,2n -k3,3n | "
+        "gzip -c > {output} "
 
 rule bed_to_bedgraph:
-    input: OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bed"
+    input: OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bed.gz"
     output: temp(OUTPUT_DIR + "{dir_type}/signal/{sample}.bedgraph")
     threads: 1
     resources:
@@ -294,7 +295,7 @@ rule bed_to_bedgraph:
 
 rule bed_to_scaled_bedgraph:
     input:
-        bed = OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bed",
+        bed = OUTPUT_DIR + "{dir_type}/align/{sample}.cleaned.bed.gz",
         seqdepth = lambda wildcards: os.path.join(OUTPUT_DIR, wildcards.dir_type, "align-spikein", wildcards.sample + ".spikein.cleaned.bam.seqdepth") if config['reference_spikein'] else os.path.join(OUTPUT_DIR, wildcards.dir_type, "align", wildcards.sample + ".cleaned.bam.seqdepth")
     output: OUTPUT_DIR + "{dir_type}/signal/{sample}.scaled.bedgraph"
     threads: 1
