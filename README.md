@@ -42,6 +42,23 @@ Examine the outputs of the workflow in the directory ```.test/outs/```
 
 Configure the workflow by editing the files `config.yaml` and creating a samplesheet.
 
+The samplesheet has the following format (other columns than these are ignored):
+```txt
+fastq,sample,control,condition
+H3K27ac_D0_209_chr21,H3K27ac_D0_209,IgG_D0_209,H3K27ac_D0
+H3K27ac_D2_209_chr21,H3K27ac_D2_209,IgG_D2_209,H3K27ac_D0
+H3K4me3_D0_209_chr21,H3K4me3_D0_209,IgG_D0_209,H3K4me3_D0
+H3K4me3_D2_209_chr21,H3K4me3_D2_209,IgG_D2_209,H3K4me3_D0
+IgG_D0_209_chr21,IgG_D0_209,,IgG_D0
+IgG_D2_209_chr21,IgG_D2_209,,IgG_D2
+```
+Control samples are included in the samplesheet with the "control" column blank.
+
+Fastq files are identified by matching the prefix in the fastq column and the regex pattern: "(_S[0-9]+)?(_L[0-9]+)?_R1(_001)?.fastq.gz".
+
+That is, they must contain R1/R2 for read1/read2 and end in the suffix .fastq.gz.
+
+
 #### Step 3: Execute workflow
 
 Ensure the conda environment is active:
