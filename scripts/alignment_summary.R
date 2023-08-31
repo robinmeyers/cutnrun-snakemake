@@ -30,7 +30,7 @@ alignment_summary <- alignment_summary %>%
 		mutate(aligned_unique = map_int(sample,
 			~ as.integer(readLines(file.path(snakemake@config$output_dir, "samples/align", paste0(., ".cleaned.bam.seqdepth")))[1])))
 
-if(snakemake@config$reference_spikein != "") {
+if(!is.null(snakemake@config$reference_spikein) && snakemake@config$reference_spikein != "") {
 	alignment_summary <- alignment_summary %>%
 		mutate(spikein_aligned = map_int(sample, function(s) {
 			bowtie2_output <- file.path(snakemake@config$output_dir, "samples/align-spikein/", paste0(s, ".spikein.bowtie2.log"))
