@@ -10,6 +10,16 @@ sink(log, type = "output")
 
 library(tidyverse)
 
+count_reads <- function(bamfile, paired_end = T) {
+	cmd <- paste("samtools flagstat", bamfile)
+	output <- system(cmd, intern = TRUE)
+	total_reads <- as.numeric(str_extract(output[1], "^\\d+"))
+	if (paired_end) {
+		total_reads <- total_reads/2
+	}
+	return(total_reads)
+}
+
 samples <- read_csv(snakemake@config$samplesheet)
 
 alignment_summary <- map_dfr(samples$sample, function(s) {
@@ -22,13 +32,39 @@ alignment_summary <- map_dfr(samples$sample, function(s) {
 	aligned_multi <- as.integer(str_extract(align_results[first_line + 4], "^\\s*\\d+"))
 	total_aligned <- aligned_once + aligned_multi
 
-	return(tibble(sample = s, total_reads = total_reads, aligned_total = total_aligned))
+	aligned_filtered <- count_reads(file.path(snakemake@config$output_dir, "samples/align/", paste0(s, ".filtered.bam")))
+	aligned_cleaned <- count_reads(file.path(snakemake@config$output_dir, "samples/align/", paste0(s, ".cleaned.bam")))
+
+	return(tibble(sample = s, total_reads = total_reads, aligned_total = total_aligned,
+				  aligned_filtered = aligned_filtered,
+				  aligned_unique = aligned_cleaned))
 
 })
 
-alignment_summary <- alignment_summary %>%
-		mutate(aligned_unique = map_int(sample,
-			~ as.integer(readLines(file.path(snakemake@config$output_dir, "samples/align", paste0(., ".cleaned.bam.seqdepth")))[1])))
+# alignment_summary <- alignment_summary %>%
+# 		mutate(aligned_unique = map_int(sample,
+# 			~ as.integer(readLines(file.path(snakemake@config$output_dir, "samples/align", paste0(., ".cleaned.bam.seqdepth")))[1])))
+
+
+if (!is.null(samples$control)) {
+	alignment_summary <- alignment_summary %>%
+		mutate(macs2_peaks = map_int(sample, function(s) {
+			controlfile <- samples %>% filter(sample == s) %>% pull(control) %>% pluck()
+			
+			if (!is.na(controlfile) && controlfile != "") {
+				peakfile <- file.path(snakemake@config$output_dir, "samples/peaks_macs2/", paste0(s, ".macs2_q0.1_peaks.narrowPeak"))
+				cmd <- paste("wc -l", peakfile)
+				
+				output <- system(cmd, intern = TRUE)
+				
+				lines <- str_remove(output, "^\\s+") %>% str_extract("^\\d+") %>% as.integer()
+				return(lines)
+			}
+			return(NA)
+		}))	
+}
+
+
 
 if(!is.null(snakemake@config$reference_spikein) && snakemake@config$reference_spikein != "") {
 	alignment_summary <- alignment_summary %>%
