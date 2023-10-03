@@ -129,6 +129,8 @@ rule alignment_summary:
     output:
         alignment_summary = OUTPUT_DIR + "samples/alignment_summary.csv"
     log: OUTPUT_DIR + "samples/alignment_summary.log"
+    resources:
+        mem_mb = 8000
     script: "scripts/alignment_summary.R"
 
 # rule mapping_stats:
