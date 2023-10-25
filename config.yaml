@@ -13,10 +13,10 @@ chrom_sizes:
 
 # Specify reference genome if using spike-in DNA (usually E. coli)
 # This automatically normalizes to the sequencing depth of the spike-in. Leave blank to normalize to sequencing depth of the sample.
-reference_spikein:
+reference_spikein: assets/reference/Escherichia_coli_K_12_MG1655/NCBI/2001-10-15/Sequence/Bowtie2Index/genome
 
 # List of excluded genome regions to filter from peaks files
-exclusion_list: assets/exclusion_list_encode4_GRCh38_ENCFF356LFX.bed
+exclusion_list: assets/exclusion_list_nordin_et_al_2023_hg38.bed
 
 # Threads per job for some mulithreaded jobs
 threads: 4
