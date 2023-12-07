@@ -1,16 +1,16 @@
 
-rule filter_excluded_regions:
-    input: "{directory}{filename}.bed"
-    output: "{directory}{filename}.filtered.bed"
-    shell:
-        "bedtools intersect -v -a {input} -b {config[exclusion_list]} > {output}"
+# rule filter_excluded_regions:
+#     input: "{directory}{filename}.bed"
+#     output: "{directory}{filename}.filtered.bed"
+#     shell:
+#         "bedtools intersect -v -a {input} -b {config[exclusion_list]} > {output}"
 
 
-rule filter_excluded_regions_narrowpeak:
-    input: "{directory}{filename}.narrowPeak"
-    output: "{directory}{filename}.filtered.narrowPeak"
-    shell:
-        "bedtools intersect -v -a {input} -b {config[exclusion_list]} > {output}"
+# rule filter_excluded_regions_narrowpeak:
+#     input: "{directory}{filename}.narrowPeak"
+#     output: "{directory}{filename}.filtered.narrowPeak"
+#     shell:
+#         "bedtools intersect -v -a {input} -b {config[exclusion_list]} > {output}"
 
 rule call_seacr_peaks:
     input: OUTPUT_DIR + "{dir_type}/signal/{sample}.scaled.bedgraph"
@@ -30,10 +30,13 @@ rule call_seacr_peaks:
 def get_expt_and_ctrl_bedgraphs(wildcards):
     if wildcards.dir_type == "samples":
         control_sample = CONTROLS[wildcards.sample]
+        control_dir = "conditions" if re.match("^condition/", control_sample) else "sample"
+        control_id = re.sub("^condition/", "", control_sample)
     if wildcards.dir_type == "conditions":
-        control_sample = wildcards.sample + "_CONTROL"
+        control_id = wildcards.sample + "_CONTROL"
+        control_dir = "conditions"
     expt_bg = os.path.join(OUTPUT_DIR, wildcards.dir_type, "signal", wildcards.sample + ".scaled.bedgraph")
-    ctrl_bg = os.path.join(OUTPUT_DIR, wildcards.dir_type, "signal", control_sample + ".scaled.bedgraph")
+    ctrl_bg = os.path.join(OUTPUT_DIR, control_dir, "signal", control_id + ".scaled.bedgraph")
     return {'expt' : expt_bg, 'ctrl' : ctrl_bg}
 
 rule call_seacr_peaks_vs_control:
@@ -54,10 +57,13 @@ rule call_seacr_peaks_vs_control:
 def get_expt_and_ctrl_bams(wildcards):
     if wildcards.dir_type == "samples":
         control_sample = CONTROLS[wildcards.sample]
+        control_dir = "conditions" if re.match("^condition/", control_sample) else "sample"
+        control_id = re.sub("^condition/", "", control_sample)
     if wildcards.dir_type == "conditions":
-        control_sample = wildcards.sample + "_CONTROL"
+        control_id = wildcards.sample + "_CONTROL"
+        control_dir = "conditions"
     expt_bg = os.path.join(OUTPUT_DIR, wildcards.dir_type, "align", wildcards.sample + ".cleaned.bam")
-    ctrl_bg = os.path.join(OUTPUT_DIR, wildcards.dir_type, "align", control_sample + ".cleaned.bam")
+    ctrl_bg = os.path.join(OUTPUT_DIR, control_dir, "align", control_id + ".cleaned.bam")
     return {'expt' : expt_bg, 'ctrl' : ctrl_bg}
 
 rule call_macs2_peaks_vs_control:

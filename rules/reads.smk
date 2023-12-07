@@ -3,21 +3,28 @@ def get_paired_fqs(wildcards):
     if (wildcards.sample not in SAMPLES.keys()):
         return {'r1' : [], 'r2': []}
         # raise ValueError(wildcards.sample + " is not a sample in the samplesheet")
-    sample_id = SAMPLES[wildcards.sample]
+    fastq_ids = SAMPLES[wildcards.sample]
+    fastq_regex = "(" + "|".join(fastq_ids) + ")"
 
-    r1 = list(filter(re.compile(sample_id + "(_S[0-9]+)?(_L[0-9]+)?_R1(_001)?.fastq.gz$").search, 
-        glob.glob(os.path.join(FASTQ_DIR, sample_id + "*"), recursive=True)))
-    r2 = list(filter(re.compile(sample_id + "(_S[0-9]+)?(_L[0-9]+)?_R2(_001)?.fastq.gz$").search, 
-        glob.glob(os.path.join(FASTQ_DIR, sample_id + "*"), recursive=True)))
+    r1_fastq_regex = ".*/" + fastq_regex + "(_S[0-9]+)?(_L[0-9]+)?_R1(_001)?.fastq.gz$"
+    r2_fastq_regex = ".*/" + fastq_regex + "(_S[0-9]+)?(_L[0-9]+)?_R2(_001)?.fastq.gz$"
+    
+    fastq_dir_files = glob.glob(os.path.join(FASTQ_DIR, "*"), recursive=True)
+
+    r1 = list(filter(re.compile(r1_fastq_regex).search, fastq_dir_files))
+    r2 = list(filter(re.compile(r2_fastq_regex).search, fastq_dir_files))
+
+    print(r1)
+    print(r2)
 
     # r1 = glob.glob(os.path.join(FASTQ_DIR, "**", sample_id + "_*R1*.fastq.gz"),
     #     recursive=True)
     # r2 = glob.glob(os.path.join(FASTQ_DIR, "**", sample_id + "_*R2*.fastq.gz"), 
     #     recursive=True)
     if len(r1) == 0:
-        raise ValueError(sample_id + " has no matching input fastq file")
+        raise ValueError(wildcards.sample + " has no matching input fastq file: " + fastq_regex)
     if len(r1) != len(r2):
-        raise ValueError(sample_id + " has different numbers of R1 and R2 fastq files")
+        raise ValueError(wildcards.sample + " has different numbers of R1 and R2 fastq files: " + fastq_regex)
     return {"r1": sorted(r1), "r2": sorted(r2)}
 
 

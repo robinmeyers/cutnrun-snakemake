@@ -22,7 +22,15 @@ samples = pd.read_csv(config['samplesheet']).set_index("sample", drop=False)
 validate(samples, schema="schemas/samples.schema.yaml")
 
 
-SAMPLES = dict(zip(samples["sample"], samples["fastq"]))
+unique_samples = np.unique(samples['sample'])
+print(unique_samples)
+fastqs = [samples.loc[samples['sample'] == s, 'fastq'].values for s in unique_samples]
+
+print(fastqs)
+print(fastqs[0])
+
+# SAMPLES = dict(zip(samples["sample"], samples["fastq"]))
+SAMPLES = dict(zip(unique_samples, fastqs))
 
 
 if "control" in samples.columns:
@@ -80,19 +88,19 @@ def get_target_files(wildcards):
 
     
     if "control" in samples.columns:
-        targets = targets + expand("samples/peaks/{sample}.vs-ctrl.{stringency}.filtered.bed", sample=CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
-        targets = targets + expand("samples/peaks_macs2/{sample}.macs2_q0.1_peaks.filtered.narrowPeak", sample=CONTROLS.keys())
+        targets = targets + expand("samples/peaks/{sample}.vs-ctrl.{stringency}.bed", sample=CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
+        targets = targets + expand("samples/peaks_macs2/{sample}.macs2_q0.1_peaks.narrowPeak", sample=CONTROLS.keys())
     else:
-        targets = targets + expand("samples/peaks/{sample}.{stringency}.filtered.bed", sample=SAMPLES.keys(), stringency = ['relaxed', 'stringent'])
+        targets = targets + expand("samples/peaks/{sample}.{stringency}.bed", sample=SAMPLES.keys(), stringency = ['relaxed', 'stringent'])
     if "condition" in samples.columns:
         targets = targets + expand("conditions/signal/{condition}.scaled.bigwig", condition=CONDITIONS.keys())
 
         if "control" in samples.columns:
-            targets = targets + expand("conditions/peaks/{condition}.vs-ctrl.{stringency}.filtered.bed", condition=CONDITION_CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
-            targets = targets + expand("conditions/peaks_macs2/{sample}.macs2_q0.1_peaks.filtered.narrowPeak", sample=CONDITION_CONTROLS.keys())
+            targets = targets + expand("conditions/peaks/{condition}.vs-ctrl.{stringency}.bed", condition=CONDITION_CONTROLS.keys(), stringency = ['relaxed', 'stringent'])
+            targets = targets + expand("conditions/peaks_macs2/{sample}.macs2_q0.1_peaks.narrowPeak", sample=CONDITION_CONTROLS.keys())
 
         else:
-            targets = targets + expand("conditions/peaks/{condition}.{stringency}.filtered.bed", condition=CONDITIONS.keys(), stringency = ['relaxed', 'stringent'])
+            targets = targets + expand("conditions/peaks/{condition}.{stringency}.bed", condition=CONDITIONS.keys(), stringency = ['relaxed', 'stringent'])
 
     if config['reference_spikein']:
         targets = targets + expand("samples/signal-spikein/{sample}.scaled.bigwig", sample=SAMPLES.keys())
