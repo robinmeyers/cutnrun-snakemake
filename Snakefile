@@ -23,11 +23,8 @@ validate(samples, schema="schemas/samples.schema.yaml")
 
 
 unique_samples = np.unique(samples['sample'])
-print(unique_samples)
 fastqs = [samples.loc[samples['sample'] == s, 'fastq'].values for s in unique_samples]
 
-print(fastqs)
-print(fastqs[0])
 
 # SAMPLES = dict(zip(samples["sample"], samples["fastq"]))
 SAMPLES = dict(zip(unique_samples, fastqs))

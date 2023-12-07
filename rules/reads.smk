@@ -14,9 +14,6 @@ def get_paired_fqs(wildcards):
     r1 = list(filter(re.compile(r1_fastq_regex).search, fastq_dir_files))
     r2 = list(filter(re.compile(r2_fastq_regex).search, fastq_dir_files))
 
-    print(r1)
-    print(r2)
-
     # r1 = glob.glob(os.path.join(FASTQ_DIR, "**", sample_id + "_*R1*.fastq.gz"),
     #     recursive=True)
     # r2 = glob.glob(os.path.join(FASTQ_DIR, "**", sample_id + "_*R2*.fastq.gz"), 
