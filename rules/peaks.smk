@@ -30,7 +30,7 @@ rule call_seacr_peaks:
 def get_expt_and_ctrl_bedgraphs(wildcards):
     if wildcards.dir_type == "samples":
         control_sample = CONTROLS[wildcards.sample]
-        control_dir = "conditions" if re.match("^condition/", control_sample) else "sample"
+        control_dir = "conditions" if re.match("^condition/", control_sample) else "samples"
         control_id = re.sub("^condition/", "", control_sample)
     if wildcards.dir_type == "conditions":
         control_id = wildcards.sample + "_CONTROL"
@@ -57,7 +57,7 @@ rule call_seacr_peaks_vs_control:
 def get_expt_and_ctrl_bams(wildcards):
     if wildcards.dir_type == "samples":
         control_sample = CONTROLS[wildcards.sample]
-        control_dir = "conditions" if re.match("^condition/", control_sample) else "sample"
+        control_dir = "conditions" if re.match("^condition/", control_sample) else "samples"
         control_id = re.sub("^condition/", "", control_sample)
     if wildcards.dir_type == "conditions":
         control_id = wildcards.sample + "_CONTROL"
