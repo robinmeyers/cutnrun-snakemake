@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - snakemake>=5.14.0
+  - snakemake>=5.14.0,<8
   - biopython>=1.74
   - bedtools>=2.29.2
   - pandas>=1.0.5
